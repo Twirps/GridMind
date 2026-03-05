@@ -1,0 +1,4 @@
+project_id = "zsljidzoaoylcvgvqtfn"
+
+[functions.spreadsheet-ai]
+verify_jwt = false
