@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CellData } from "./types";
 import {
   Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight,
-  Plus, Minus, Undo, Redo, Download,
+  Undo, Redo, WrapText,
 } from "lucide-react";
 
 interface ToolbarProps {
