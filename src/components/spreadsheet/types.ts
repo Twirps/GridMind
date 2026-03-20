@@ -9,6 +9,7 @@ export interface CellData {
   bgColor?: string;
   textColor?: string;
   fontSize?: number;
+  wrap?: boolean;
 }
 
 export type CellAddress = { row: number; col: number };
