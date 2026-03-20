@@ -144,15 +144,39 @@ export default function Index() {
           <FileSpreadsheet className="h-4 w-4 text-primary" />
           <span className="text-sm font-semibold text-foreground">Spreadsheet</span>
         </div>
-        <Button
-          variant={aiOpen ? "default" : "outline"}
-          size="sm"
-          className="h-6 text-xs gap-1.5"
-          onClick={() => setAiOpen((v) => !v)}
-        >
-          <Sparkles className="h-3.5 w-3.5" />
-          {aiOpen ? "Close AI" : "AI Assistant"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-6 text-xs gap-1.5">
+                <Download className="h-3.5 w-3.5" />
+                Download
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuItem onClick={() => downloadCSV(activeSheet)} className="gap-2 text-xs">
+                <FileDown className="h-3.5 w-3.5" />
+                CSV (.csv)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => downloadExcel(sheets)} className="gap-2 text-xs">
+                <Table className="h-3.5 w-3.5" />
+                Excel (.xlsx)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => downloadPDF(activeSheet)} className="gap-2 text-xs">
+                <FileText className="h-3.5 w-3.5" />
+                PDF (.pdf)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button
+            variant={aiOpen ? "default" : "outline"}
+            size="sm"
+            className="h-6 text-xs gap-1.5"
+            onClick={() => setAiOpen((v) => !v)}
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            {aiOpen ? "Close AI" : "AI Assistant"}
+          </Button>
+        </div>
       </div>
 
       {/* Toolbar */}
