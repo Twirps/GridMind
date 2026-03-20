@@ -151,7 +151,7 @@ export function SpreadsheetGrid({
             }}
           />
         ) : (
-          <span className="block px-[3px] py-[1px] overflow-hidden whitespace-nowrap text-ellipsis select-none">
+          <span className={`block px-[3px] py-[1px] select-none ${cell?.wrap ? "whitespace-pre-wrap break-words" : "overflow-hidden whitespace-nowrap text-ellipsis"}`}>
             {String(displayVal)}
           </span>
         )}
