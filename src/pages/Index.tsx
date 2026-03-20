@@ -6,10 +6,14 @@ import { SheetTabs } from "@/components/spreadsheet/SheetTabs";
 import { AIChatPane } from "@/components/AIChatPane";
 import { Button } from "@/components/ui/button";
 import {
-  SheetData, CellAddress, CellData, cellKey, NUM_COLS, NUM_ROWS,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  SheetData, CellAddress, CellData, cellKey,
 } from "@/components/spreadsheet/types";
 import { computeSheet } from "@/components/spreadsheet/formulaEngine";
-import { Sparkles, FileSpreadsheet } from "lucide-react";
+import { downloadCSV, downloadExcel, downloadPDF } from "@/components/spreadsheet/downloadUtils";
+import { Sparkles, FileSpreadsheet, Download, FileText, Table, FileDown } from "lucide-react";
 
 function createSheet(name: string, id: string): SheetData {
   return { id, name, cells: {}, colWidths: {}, rowHeights: {} };

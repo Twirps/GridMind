@@ -52,7 +52,7 @@ export function Toolbar({ cellStyle, onStyleChange, onUndo, onRedo, canUndo, can
 
       <Separator orientation="vertical" className="h-5 mx-1" />
 
-      {/* Bold/Italic/Underline */}
+      {/* Bold/Italic/Underline/Wrap */}
       <Button variant={cellStyle.bold ? "toolbar-active" : "toolbar"} size="icon-sm" onClick={() => toggle("bold")} title="Bold (Ctrl+B)">
         <Bold className="h-3.5 w-3.5" />
       </Button>
@@ -61,6 +61,9 @@ export function Toolbar({ cellStyle, onStyleChange, onUndo, onRedo, canUndo, can
       </Button>
       <Button variant={cellStyle.underline ? "toolbar-active" : "toolbar"} size="icon-sm" onClick={() => toggle("underline")} title="Underline (Ctrl+U)">
         <Underline className="h-3.5 w-3.5" />
+      </Button>
+      <Button variant={cellStyle.wrap ? "toolbar-active" : "toolbar"} size="icon-sm" onClick={() => toggle("wrap")} title="Wrap Text">
+        <WrapText className="h-3.5 w-3.5" />
       </Button>
 
       <Separator orientation="vertical" className="h-5 mx-1" />
