@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from "react";
+import { Sparkles } from "lucide-react"; // Requirement: Visual indicator for AI
 import {
   SheetData, CellData, CellAddress, cellKey, colLabel,
   DEFAULT_COL_WIDTH, DEFAULT_ROW_HEIGHT, NUM_ROWS, NUM_COLS,
@@ -108,10 +109,15 @@ export function SpreadsheetGrid({
 
   const renderCell = (row: number, col: number) => {
     const key = cellKey(row, col);
-    const cell = sheet.cells[key] as CellData | undefined;
+    const cell = sheet.cells[key] as any; // Cast to access metadata
     const isSelected = selectedCell?.row === row && selectedCell?.col === col;
     const isInRange = isCellInRange(row, col, selectionRange);
     const isEditing = editingCell?.row === row && editingCell?.col === col;
+
+    // AI Metadata for Explainable AI
+    const isAiGenerated = cell?.metadata?.aiGenerated;
+    const aiLogic = cell?.metadata?.logic;
+
     const displayVal = cell?.computed !== undefined ? cell.computed : (cell?.value ?? "");
     const w = getColWidth(col);
     const h = getRowHeight(row);
@@ -123,7 +129,14 @@ export function SpreadsheetGrid({
       fontStyle: cell?.italic ? "italic" : undefined,
       textDecoration: cell?.underline ? "underline" : undefined,
       textAlign: cell?.align ?? "left",
-      backgroundColor: cell?.bgColor ? cell.bgColor : isInRange && !isSelected ? "hsl(var(--cell-selected))" : undefined,
+      // UI Polish: AI-generated cells get a subtle blue tint
+      backgroundColor: cell?.bgColor 
+        ? cell.bgColor 
+        : isAiGenerated 
+          ? "rgba(59, 130, 246, 0.05)" 
+          : isInRange && !isSelected 
+            ? "hsl(var(--cell-selected))" 
+            : undefined,
       color: cell?.textColor ?? undefined,
       fontSize: cell?.fontSize ? `${cell.fontSize}px` : undefined,
     };
@@ -131,16 +144,32 @@ export function SpreadsheetGrid({
     return (
       <div
         key={key}
-        className={`sheet-cell flex-shrink-0 relative cursor-cell ${isSelected ? "sheet-cell-selected" : ""}`}
+        className={`sheet-cell flex-shrink-0 relative cursor-cell group ${
+          isSelected ? "sheet-cell-selected z-10" : ""
+        } ${isAiGenerated ? "border-blue-100" : ""}`}
         style={style}
         onMouseDown={(e) => handleCellMouseDown(row, col, e)}
         onMouseEnter={() => handleCellMouseEnter(row, col)}
         onDoubleClick={() => startEdit({ row, col })}
       >
+        {/* Requirement: Explainable AI - The Sparkle indicator and Logic Tooltip */}
+        {isAiGenerated && !isEditing && (
+          <div className="absolute top-0 right-0 p-0.5 z-20">
+            <Sparkles className="h-2 w-2 text-primary opacity-40 group-hover:opacity-100 transition-opacity" />
+            
+            <div className="invisible group-hover:visible absolute left-full top-0 ml-2 z-50 w-48 p-2 bg-slate-900 text-white text-[10px] rounded shadow-xl pointer-events-none animate-in fade-in zoom-in-95">
+               <p className="font-bold border-b border-white/20 mb-1 pb-1 flex items-center gap-1">
+                 <Sparkles className="h-2 w-2" /> AI Reasoning
+               </p>
+               {aiLogic || "Recognized pattern from context."}
+            </div>
+          </div>
+        )}
+
         {isEditing ? (
           <input
             ref={inputRef}
-            className="sheet-cell-input"
+            className="sheet-cell-input w-full h-full bg-white outline-none ring-2 ring-primary ring-inset z-30"
             style={{ textAlign: cell?.align ?? "left" }}
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
@@ -151,7 +180,9 @@ export function SpreadsheetGrid({
             }}
           />
         ) : (
-          <span className={`block px-[3px] py-[1px] select-none ${cell?.wrap ? "whitespace-pre-wrap break-words" : "overflow-hidden whitespace-nowrap text-ellipsis"}`}>
+          <span className={`block px-[3px] py-[1px] select-none h-full ${
+            cell?.wrap ? "whitespace-pre-wrap break-words" : "overflow-hidden whitespace-nowrap text-ellipsis"
+          }`}>
             {String(displayVal)}
           </span>
         )}
@@ -162,7 +193,7 @@ export function SpreadsheetGrid({
   return (
     <div
       ref={gridRef}
-      className="flex-1 overflow-auto bg-background outline-none"
+      className="flex-1 overflow-auto bg-background outline-none scrollbar-thin"
       tabIndex={0}
       onKeyDown={handleKeyDown}
       style={{ cursor: "default" }}
@@ -170,28 +201,33 @@ export function SpreadsheetGrid({
       <div className="inline-block min-w-full">
         {/* Column headers */}
         <div className="flex sticky top-0 z-10">
-          {/* Corner */}
           <div className="flex-shrink-0 border-b border-r border-grid bg-grid-header sticky left-0 z-20"
             style={{ width: 50, height: DEFAULT_ROW_HEIGHT }} />
           {Array.from({ length: NUM_COLS }, (_, c) => (
             <div
               key={c}
-              className="flex-shrink-0 border-b border-r border-grid bg-grid-header flex items-center justify-center text-[11px] font-medium text-muted-foreground select-none"
-              style={{ width: getColWidth(c), height: DEFAULT_ROW_HEIGHT,
-                backgroundColor: selectedCell?.col === c ? "hsl(var(--toolbar-active))" : undefined }}
+              className="flex-shrink-0 border-b border-r border-grid bg-grid-header flex items-center justify-center text-[11px] font-medium text-muted-foreground select-none transition-colors"
+              style={{ 
+                width: getColWidth(c), 
+                height: DEFAULT_ROW_HEIGHT,
+                backgroundColor: selectedCell?.col === c ? "hsl(var(--toolbar-active))" : undefined 
+              }}
             >
               {colLabel(c)}
             </div>
           ))}
         </div>
+
         {/* Rows */}
         {Array.from({ length: NUM_ROWS }, (_, r) => (
           <div key={r} className="flex">
-            {/* Row header */}
             <div
-              className="flex-shrink-0 border-b border-r border-grid bg-grid-header flex items-center justify-center text-[11px] font-medium text-muted-foreground select-none sticky left-0 z-10"
-              style={{ width: 50, height: getRowHeight(r),
-                backgroundColor: selectedCell?.row === r ? "hsl(var(--toolbar-active))" : undefined }}
+              className="flex-shrink-0 border-b border-r border-grid bg-grid-header flex items-center justify-center text-[11px] font-medium text-muted-foreground select-none sticky left-0 z-10 transition-colors"
+              style={{ 
+                width: 50, 
+                height: getRowHeight(r),
+                backgroundColor: selectedCell?.row === r ? "hsl(var(--toolbar-active))" : undefined 
+              }}
             >
               {r + 1}
             </div>
@@ -202,3 +238,4 @@ export function SpreadsheetGrid({
     </div>
   );
 }
+// Visual cue for data that was produced by AI,Logic tooltips and Cell highlight added - Yannic
