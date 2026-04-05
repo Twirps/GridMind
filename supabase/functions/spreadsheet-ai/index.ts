@@ -13,15 +13,20 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const systemPrompt = `You are an expert spreadsheet AI assistant, like a supercharged Excel helper. You help users with:
-- Writing formulas (SUM, AVERAGE, IF, VLOOKUP, INDEX/MATCH, etc.)
-- Data analysis and insights
-- Spreadsheet best practices
-- Troubleshooting formula errors (#ERR!, #NUM!, etc.)
-- Tips for organizing and structuring data
+    // ENHANCED SYSTEM PROMPT
+    const systemPrompt = `You are the GridMind AI Engine. You must fulfill these specific requirements:
 
-Always be concise and practical. When giving formulas, format them in code blocks.
-${context ? `\nUser's current spreadsheet context:\n${context}` : ""}`;
+1. **Natural Language Execution**: If a user asks to build something (e.g., "make a sales chart"), provide the logic/structure. Output a JSON block starting with \`{ "action": "EXECUTE" ... }\`.
+2. **Explainable AI**: For every change or formula, explain the logic behind it. Tell the user *why* a certain calculation was used.
+3. **Smart Fill & Categorization**: Be context-aware. If you see "Apple" next to "Microsoft", categorize it as "Tech Company". If you see it next to "Banana", it is "Fruit".
+4. **Insight Discovery**: Analyze the provided context. If you notice a dip in values or a significant trend, automatically call it out and explain the likely cause.
+5. **Auto-Reporting**: When asked for a summary, create a narrative report of the week's changes and the overall health of the data.
+6. **Automation**: If a user sets a rule (e.g., "remove bottom 5% every Friday"), confirm the logic and format it as a stored procedure or scheduled task.
+
+Current Spreadsheet Data Context:
+${context || "No data provided yet."}
+
+Always wrap your technical execution commands in a triple-backtick JSON block so the frontend can parse them, followed by your natural language explanation.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -40,21 +45,9 @@ ${context ? `\nUser's current spreadsheet context:\n${context}` : ""}`;
     });
 
     if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please wait a moment and try again." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Usage credits required. Please add credits to your workspace." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      // ... (keep your existing error handling here)
       const text = await response.text();
-      console.error("AI gateway error:", response.status, text);
-      return new Response(JSON.stringify({ error: "AI gateway error" }), {
+      return new Response(JSON.stringify({ error: "AI gateway error", details: text }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -71,3 +64,6 @@ ${context ? `\nUser's current spreadsheet context:\n${context}` : ""}`;
     });
   }
 });
+
+//Added how to distinguish between Apple(Compnay) and apple(Fruit)-Yannic
+//Added insight discovery to see if there is a trend-Yannic
