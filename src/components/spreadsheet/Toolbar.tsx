@@ -24,7 +24,7 @@ export function Toolbar({ cellStyle, onStyleChange, onUndo, onRedo, canUndo, can
   };
 
   return (
-    <div className="toolbar flex items-center gap-1 px-2 py-1 border-b border-border bg-toolbar select-none flex-wrap">
+    <div className="toolbar flex items-center gap-1 px-3 py-1.5 border-b border-border/50 glass select-none flex-wrap">
       {/* Undo/Redo */}
       <Button variant="toolbar" size="icon-sm" onClick={onUndo} disabled={!canUndo} title="Undo">
         <Undo className="h-3.5 w-3.5" />
@@ -33,14 +33,14 @@ export function Toolbar({ cellStyle, onStyleChange, onUndo, onRedo, canUndo, can
         <Redo className="h-3.5 w-3.5" />
       </Button>
 
-      <Separator orientation="vertical" className="h-5 mx-1" />
+      <Separator orientation="vertical" className="h-5 mx-1.5 bg-border/50" />
 
       {/* Font size */}
       <Select
         value={String(cellStyle.fontSize ?? 12)}
         onValueChange={(v) => onStyleChange({ fontSize: Number(v) })}
       >
-        <SelectTrigger className="h-6 w-14 text-xs border-border bg-background">
+        <SelectTrigger className="h-7 w-14 text-xs border-border/50 bg-card rounded-lg">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -50,53 +50,57 @@ export function Toolbar({ cellStyle, onStyleChange, onUndo, onRedo, canUndo, can
         </SelectContent>
       </Select>
 
-      <Separator orientation="vertical" className="h-5 mx-1" />
+      <Separator orientation="vertical" className="h-5 mx-1.5 bg-border/50" />
 
       {/* Bold/Italic/Underline/Wrap */}
-      <Button variant={cellStyle.bold ? "toolbar-active" : "toolbar"} size="icon-sm" onClick={() => toggle("bold")} title="Bold (Ctrl+B)">
-        <Bold className="h-3.5 w-3.5" />
-      </Button>
-      <Button variant={cellStyle.italic ? "toolbar-active" : "toolbar"} size="icon-sm" onClick={() => toggle("italic")} title="Italic (Ctrl+I)">
-        <Italic className="h-3.5 w-3.5" />
-      </Button>
-      <Button variant={cellStyle.underline ? "toolbar-active" : "toolbar"} size="icon-sm" onClick={() => toggle("underline")} title="Underline (Ctrl+U)">
-        <Underline className="h-3.5 w-3.5" />
-      </Button>
-      <Button variant={cellStyle.wrap ? "toolbar-active" : "toolbar"} size="icon-sm" onClick={() => toggle("wrap")} title="Wrap Text">
-        <WrapText className="h-3.5 w-3.5" />
-      </Button>
+      <div className="flex items-center gap-0.5 bg-accent/40 rounded-lg p-0.5">
+        <Button variant={cellStyle.bold ? "toolbar-active" : "toolbar"} size="icon-sm" onClick={() => toggle("bold")} title="Bold (Ctrl+B)">
+          <Bold className="h-3.5 w-3.5" />
+        </Button>
+        <Button variant={cellStyle.italic ? "toolbar-active" : "toolbar"} size="icon-sm" onClick={() => toggle("italic")} title="Italic (Ctrl+I)">
+          <Italic className="h-3.5 w-3.5" />
+        </Button>
+        <Button variant={cellStyle.underline ? "toolbar-active" : "toolbar"} size="icon-sm" onClick={() => toggle("underline")} title="Underline (Ctrl+U)">
+          <Underline className="h-3.5 w-3.5" />
+        </Button>
+        <Button variant={cellStyle.wrap ? "toolbar-active" : "toolbar"} size="icon-sm" onClick={() => toggle("wrap")} title="Wrap Text">
+          <WrapText className="h-3.5 w-3.5" />
+        </Button>
+      </div>
 
-      <Separator orientation="vertical" className="h-5 mx-1" />
+      <Separator orientation="vertical" className="h-5 mx-1.5 bg-border/50" />
 
       {/* Alignment */}
-      <Button variant={cellStyle.align === "left" || !cellStyle.align ? "toolbar-active" : "toolbar"} size="icon-sm" onClick={() => onStyleChange({ align: "left" })} title="Align Left">
-        <AlignLeft className="h-3.5 w-3.5" />
-      </Button>
-      <Button variant={cellStyle.align === "center" ? "toolbar-active" : "toolbar"} size="icon-sm" onClick={() => onStyleChange({ align: "center" })} title="Align Center">
-        <AlignCenter className="h-3.5 w-3.5" />
-      </Button>
-      <Button variant={cellStyle.align === "right" ? "toolbar-active" : "toolbar"} size="icon-sm" onClick={() => onStyleChange({ align: "right" })} title="Align Right">
-        <AlignRight className="h-3.5 w-3.5" />
-      </Button>
+      <div className="flex items-center gap-0.5 bg-accent/40 rounded-lg p-0.5">
+        <Button variant={cellStyle.align === "left" || !cellStyle.align ? "toolbar-active" : "toolbar"} size="icon-sm" onClick={() => onStyleChange({ align: "left" })} title="Align Left">
+          <AlignLeft className="h-3.5 w-3.5" />
+        </Button>
+        <Button variant={cellStyle.align === "center" ? "toolbar-active" : "toolbar"} size="icon-sm" onClick={() => onStyleChange({ align: "center" })} title="Align Center">
+          <AlignCenter className="h-3.5 w-3.5" />
+        </Button>
+        <Button variant={cellStyle.align === "right" ? "toolbar-active" : "toolbar"} size="icon-sm" onClick={() => onStyleChange({ align: "right" })} title="Align Right">
+          <AlignRight className="h-3.5 w-3.5" />
+        </Button>
+      </div>
 
-      <Separator orientation="vertical" className="h-5 mx-1" />
+      <Separator orientation="vertical" className="h-5 mx-1.5 bg-border/50" />
 
       {/* Colors */}
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1.5">
         <label className="flex flex-col items-center gap-0.5 cursor-pointer" title="Background Color">
-          <span className="text-[9px] text-muted-foreground leading-none">BG</span>
+          <span className="text-[9px] text-muted-foreground leading-none font-medium">BG</span>
           <input
             type="color"
-            className="h-4 w-6 cursor-pointer rounded border-0 p-0"
+            className="h-5 w-7 cursor-pointer rounded-md border border-border/50 p-0"
             value={cellStyle.bgColor ?? "#ffffff"}
             onChange={(e) => onStyleChange({ bgColor: e.target.value })}
           />
         </label>
         <label className="flex flex-col items-center gap-0.5 cursor-pointer" title="Text Color">
-          <span className="text-[9px] text-muted-foreground leading-none">TXT</span>
+          <span className="text-[9px] text-muted-foreground leading-none font-medium">TXT</span>
           <input
             type="color"
-            className="h-4 w-6 cursor-pointer rounded border-0 p-0"
+            className="h-5 w-7 cursor-pointer rounded-md border border-border/50 p-0"
             value={cellStyle.textColor ?? "#000000"}
             onChange={(e) => onStyleChange({ textColor: e.target.value })}
           />

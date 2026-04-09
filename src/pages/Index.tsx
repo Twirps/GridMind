@@ -44,7 +44,6 @@ export default function Index() {
   const [saving, setSaving] = useState(false);
   const [docName, setDocName] = useState("Untitled Spreadsheet");
 
-  // Load spreadsheet from DB if id is provided
   useEffect(() => {
     if (spreadsheetId && user) {
       supabase
@@ -107,48 +106,40 @@ export default function Index() {
     updateSheets(newSheets);
   }, [sheets, activeSheetId, updateSheets]);
 
-  // --- CORE AI EXECUTION ENGINE (Requirements: Execution, Smart Fill, Insights) ---
   const handleAIExecute = useCallback((command: any) => {
     updateActiveSheet((sheet) => {
       const newCells = { ...sheet.cells };
-      
       switch (command.action) {
-        case "SET_CELLS": 
-          // Handles "Natural Language Execution" and "Smart Fill"
+        case "SET_CELLS":
           command.data.forEach((item: any) => {
             const key = cellKey(item.row, item.col);
-            newCells[key] = { 
+            newCells[key] = {
               ...newCells[key],
-              value: item.value, 
-              // Requirement: Explainable AI - Store logic in metadata
-              metadata: { aiGenerated: true, logic: item.logic || "Pattern recognized by GridMind" } 
+              value: item.value,
+              metadata: { aiGenerated: true, logic: item.logic || "Pattern recognized by GridMind" }
             };
           });
           break;
-
-        case "DELETE_BOTTOM_PERCENT": 
-          // Requirement: "Automatically do certain tasks: remove the bottom 5% of sales"
+        case "DELETE_BOTTOM_PERCENT": {
           const columnValues = Object.entries(sheet.cells)
             .filter(([key]) => key.endsWith(`,${command.col}`))
-            .map(([key, cell]) => ({ 
-              key, 
-              val: parseFloat(cell.computed?.toString() || cell.value || "0") 
+            .map(([key, cell]) => ({
+              key,
+              val: parseFloat(cell.computed?.toString() || cell.value || "0")
             }))
             .filter(item => !isNaN(item.val))
             .sort((a, b) => a.val - b.val);
-          
           const countToRemove = Math.ceil(columnValues.length * (command.percent / 100));
           for (let i = 0; i < countToRemove; i++) {
             delete newCells[columnValues[i].key];
           }
-          toast({ 
-            title: "Task Executed", 
-            description: `Automated cleanup: Removed bottom ${command.percent}% from column ${String.fromCharCode(65 + command.col)}` 
+          toast({
+            title: "Task Executed",
+            description: `Automated cleanup: Removed bottom ${command.percent}% from column ${String.fromCharCode(65 + command.col)}`
           });
           break;
-
-        case "INSIGHT_DISCOVERY": 
-          // Requirement: "Notices a dip and automatically breaks it down why"
+        }
+        case "INSIGHT_DISCOVERY":
           toast({
             title: "💡 Insight Discovery",
             description: command.message,
@@ -203,27 +194,27 @@ export default function Index() {
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-muted/30">
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-background">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card shadow-sm flex-shrink-0 z-20">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border/50 glass flex-shrink-0 z-20">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon-sm" onClick={() => navigate("/")} className="mr-1">
+          <Button variant="ghost" size="icon-sm" onClick={() => navigate("/")} className="mr-1 hover:bg-accent">
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div className="bg-primary/10 p-1.5 rounded-lg">
-            <Zap className="h-5 w-5 text-primary animate-pulse" />
+          <div className="bg-gradient-to-br from-primary to-[hsl(var(--gradient-end))] p-1.5 rounded-lg shadow-md shadow-primary/20">
+            <Zap className="h-4 w-4 text-primary-foreground" />
           </div>
           {user && !isGuest ? (
             <input
-              className="text-sm font-bold tracking-tight text-foreground uppercase bg-transparent border-none outline-none focus:ring-1 focus:ring-ring rounded px-1"
+              className="text-sm font-bold tracking-tight text-foreground bg-transparent border-none outline-none focus:ring-1 focus:ring-ring rounded px-1"
               value={docName}
               onChange={(e) => setDocName(e.target.value)}
             />
           ) : (
-            <span className="text-sm font-bold tracking-tight text-foreground uppercase">GridMind AI</span>
+            <span className="text-sm font-bold tracking-tight text-foreground">GridMind AI</span>
           )}
           {isGuest && (
-            <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Guest Mode</span>
+            <span className="text-[10px] text-muted-foreground bg-accent/80 px-2.5 py-0.5 rounded-full font-medium border border-border/50">Guest Mode</span>
           )}
         </div>
 
@@ -232,7 +223,7 @@ export default function Index() {
             <Button
               variant="outline"
               size="sm"
-              className="h-8 text-xs gap-2"
+              className="h-8 text-xs gap-2 hover:border-primary/30 hover:bg-primary/5 transition-colors"
               onClick={handleSave}
               disabled={saving}
             >
@@ -243,7 +234,7 @@ export default function Index() {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 text-xs gap-2">
+              <Button variant="ghost" size="sm" className="h-8 text-xs gap-2 hover:bg-accent">
                 <Download className="h-4 w-4" />
                 Export
               </Button>
@@ -261,10 +252,14 @@ export default function Index() {
           <Button
             variant={aiOpen ? "default" : "outline"}
             size="sm"
-            className="h-8 px-4 text-xs gap-2 transition-all shadow-sm"
+            className={`h-8 px-4 text-xs gap-2 transition-all ${
+              aiOpen
+                ? "bg-gradient-to-r from-primary to-[hsl(var(--gradient-end))] shadow-lg shadow-primary/25"
+                : "hover:border-primary/30 hover:bg-primary/5"
+            }`}
             onClick={() => setAiOpen((v) => !v)}
           >
-            <Sparkles className={`h-4 w-4 ${aiOpen ? 'animate-spin-slow' : 'text-primary'}`} />
+            <Sparkles className="h-4 w-4" />
             {aiOpen ? "Hide AI" : "AI Assistant"}
           </Button>
         </div>
@@ -297,7 +292,7 @@ export default function Index() {
         />
 
         {aiOpen && (
-          <div className="w-[400px] border-l border-border bg-card shadow-2xl z-10 transition-all animate-in slide-in-from-right">
+          <div className="w-[400px] border-l border-border/50 bg-card shadow-2xl z-10 animate-slide-in-right">
             <AIChatPane
               onClose={() => setAiOpen(false)}
               sheetContext={getSheetContext()}
@@ -318,4 +313,3 @@ export default function Index() {
     </div>
   );
 }
-

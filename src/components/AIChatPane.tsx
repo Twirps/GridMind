@@ -108,31 +108,35 @@ export function AIChatPane({ onClose, sheetContext, onExecute }: AIChatPaneProps
   };
 
   return (
-    <div className="flex flex-col h-full bg-background border-l border-border" style={{ width: 360 }}>
+    <div className="flex flex-col h-full bg-card" style={{ width: 400 }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-primary" />
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-gradient-to-r from-primary/5 to-[hsl(var(--gradient-end)/0.05)] flex-shrink-0">
+        <div className="flex items-center gap-2.5">
+          <div className="bg-gradient-to-br from-primary to-[hsl(var(--gradient-end))] p-1.5 rounded-lg shadow-sm">
+            <Sparkles className="h-3.5 w-3.5 text-primary-foreground" />
+          </div>
           <span className="text-sm font-semibold text-foreground">AI Assistant</span>
         </div>
-        <Button variant="ghost" size="icon-sm" onClick={onClose}>
+        <Button variant="ghost" size="icon-sm" onClick={onClose} className="hover:bg-accent">
           <X className="h-4 w-4" />
         </Button>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-3">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg, i) => (
-          <div key={i} className={`flex gap-2 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
-            <div className={`flex-shrink-0 h-6 w-6 rounded-full flex items-center justify-center ${
-              msg.role === "assistant" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
+          <div key={i} className={`flex gap-2.5 animate-fade-in ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+            <div className={`flex-shrink-0 h-7 w-7 rounded-lg flex items-center justify-center shadow-sm ${
+              msg.role === "assistant"
+                ? "bg-gradient-to-br from-primary to-[hsl(var(--gradient-end))] text-primary-foreground"
+                : "bg-accent text-foreground"
             }`}>
               {msg.role === "assistant" ? <Bot className="h-3.5 w-3.5" /> : <User className="h-3 w-3" />}
             </div>
-            <div className={`max-w-[85%] rounded-lg px-3 py-2 text-xs leading-relaxed ${
+            <div className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed shadow-sm ${
               msg.role === "user"
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-foreground"
+                ? "bg-gradient-to-br from-primary to-[hsl(var(--gradient-end))] text-primary-foreground"
+                : "bg-accent/60 text-foreground border border-border/30"
             }`}>
               {msg.role === "assistant" ? (
                 <div className="prose prose-xs max-w-none prose-code:bg-background prose-code:text-primary prose-code:px-1 prose-code:rounded">
@@ -145,12 +149,14 @@ export function AIChatPane({ onClose, sheetContext, onExecute }: AIChatPaneProps
           </div>
         ))}
         {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
-          <div className="flex gap-2">
-            <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+          <div className="flex gap-2.5 animate-fade-in">
+            <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-primary to-[hsl(var(--gradient-end))] flex items-center justify-center flex-shrink-0 shadow-sm">
               <Bot className="h-3.5 w-3.5 text-primary-foreground" />
             </div>
-            <div className="bg-muted rounded-lg px-3 py-2">
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+            <div className="bg-accent/60 border border-border/30 rounded-2xl px-4 py-3 flex gap-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 animate-bounce" style={{ animationDelay: "0ms" }} />
+              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 animate-bounce" style={{ animationDelay: "150ms" }} />
+              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 animate-bounce" style={{ animationDelay: "300ms" }} />
             </div>
           </div>
         )}
@@ -158,11 +164,11 @@ export function AIChatPane({ onClose, sheetContext, onExecute }: AIChatPaneProps
       </div>
 
       {/* Input */}
-      <div className="border-t border-border p-3 flex-shrink-0">
+      <div className="border-t border-border/50 p-3 flex-shrink-0 bg-accent/20">
         <div className="flex gap-2 items-end">
           <textarea
             ref={inputRef}
-            className="flex-1 resize-none rounded-md border border-input bg-background px-3 py-2 text-xs outline-none focus:ring-1 focus:ring-ring min-h-[60px] max-h-[120px]"
+            className="flex-1 resize-none rounded-xl border border-border/50 bg-card px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 min-h-[60px] max-h-[120px] transition-all"
             placeholder="Ask about formulas, data analysis..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -171,16 +177,15 @@ export function AIChatPane({ onClose, sheetContext, onExecute }: AIChatPaneProps
             }}
           />
           <Button
-            variant="default"
             size="icon-sm"
             onClick={send}
             disabled={!input.trim() || isLoading}
-            className="h-8 w-8 flex-shrink-0"
+            className="h-9 w-9 flex-shrink-0 rounded-xl bg-gradient-to-br from-primary to-[hsl(var(--gradient-end))] hover:opacity-90 shadow-md shadow-primary/20"
           >
             {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
           </Button>
         </div>
-        <p className="text-[10px] text-muted-foreground mt-1.5">Enter to send · Shift+Enter for new line</p>
+        <p className="text-[10px] text-muted-foreground mt-1.5 px-1">Enter to send · Shift+Enter for new line</p>
       </div>
     </div>
   );
