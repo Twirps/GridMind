@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { X, Send, Bot, User, Loader2, Sparkles } from "lucide-react";
+import { X, Send, Bot, User, Loader2, Sparkles, Play, AlertTriangle, FlaskConical, LayoutTemplate, HelpCircle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 interface Message {
@@ -12,11 +12,41 @@ interface AIChatPaneProps {
   onClose: () => void;
   sheetContext?: string;
   onExecute?: (command: any) => void;
+  selectedCellLabel?: string;
 }
 
-export function AIChatPane({ onClose, sheetContext, onExecute }: AIChatPaneProps) {
+function extractCommands(content: string): any[] {
+  const commands: any[] = [];
+  const regex = /```json\s*\n([\s\S]*?)\n```/g;
+  let match;
+  while ((match = regex.exec(content)) !== null) {
+    try {
+      const parsed = JSON.parse(match[1]);
+      if (parsed.action) commands.push(parsed);
+    } catch { /* not valid JSON */ }
+  }
+  return commands;
+}
+
+const QUICK_ACTIONS = [
+  { label: "Explain this cell", icon: HelpCircle, prompt: (cell?: string) => cell ? `Explain cell ${cell} — what formula or value is in it and how it was calculated?` : "Explain the currently selected cell." },
+  { label: "Find errors", icon: AlertTriangle, prompt: () => "Scan my spreadsheet for any errors (#REF!, #VALUE!, #DIV/0!, #NAME?, circular references) and explain how to fix them." },
+  { label: "Test a scenario", icon: FlaskConical, prompt: () => "I want to test a what-if scenario. Help me change some assumptions and see how it affects the rest of the model." },
+  { label: "Build a model", icon: LayoutTemplate, prompt: () => "Help me build a spreadsheet model. What kind of model would you like to create?" },
+];
+
+const WELCOME_MESSAGE = `👋 I'm **GridMind**, your spreadsheet expert. Here's how I can help:
+
+• **Explain any cell** — ask about formulas, values, or calculation flows with cell-level citations
+• **Test scenarios** — change assumptions and see every affected cell explained
+• **Debug errors** — trace #REF!, #VALUE!, circular references to their source
+• **Build models** — create financial models or fill templates from scratch
+
+Use the quick actions below or just ask me anything about your spreadsheet!`;
+
+export function AIChatPane({ onClose, sheetContext, onExecute, selectedCellLabel }: AIChatPaneProps) {
   const [messages, setMessages] = useState<Message[]>([
-    { role: "assistant", content: "Hi! I'm your spreadsheet AI assistant. Ask me to help with formulas, data analysis, or any Excel-like questions!" }
+    { role: "assistant", content: WELCOME_MESSAGE }
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -27,18 +57,14 @@ export function AIChatPane({ onClose, sheetContext, onExecute }: AIChatPaneProps
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const send = async () => {
-    const text = input.trim();
+  const send = async (overrideText?: string) => {
+    const text = (overrideText ?? input).trim();
     if (!text || isLoading) return;
-    setInput("");
+    if (!overrideText) setInput("");
 
     const userMsg: Message = { role: "user", content: text };
     setMessages((prev) => [...prev, userMsg]);
     setIsLoading(true);
-
-    const contextMsg = sheetContext
-      ? `The user's current spreadsheet context:\n${sheetContext}\n\n`
-      : "";
 
     try {
       const chatMessages = [
@@ -53,7 +79,7 @@ export function AIChatPane({ onClose, sheetContext, onExecute }: AIChatPaneProps
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: chatMessages, context: contextMsg }),
+        body: JSON.stringify({ messages: chatMessages, context: sheetContext || "" }),
       });
 
       if (!resp.ok) {
@@ -107,6 +133,15 @@ export function AIChatPane({ onClose, sheetContext, onExecute }: AIChatPaneProps
     }
   };
 
+  const handleApply = (command: any) => {
+    if (onExecute) {
+      onExecute(command);
+      setMessages((prev) => [...prev, { role: "assistant", content: `✅ Applied **${command.action}** — ${command.explanation || "Changes applied to your spreadsheet."}` }]);
+    }
+  };
+
+  const showQuickActions = messages.length <= 1 && !isLoading;
+
   return (
     <div className="flex flex-col h-full bg-card" style={{ width: 400 }}>
       {/* Header */}
@@ -115,7 +150,7 @@ export function AIChatPane({ onClose, sheetContext, onExecute }: AIChatPaneProps
           <div className="bg-gradient-to-br from-primary to-[hsl(var(--gradient-end))] p-1.5 rounded-lg shadow-sm">
             <Sparkles className="h-3.5 w-3.5 text-primary-foreground" />
           </div>
-          <span className="text-sm font-semibold text-foreground">AI Assistant</span>
+          <span className="text-sm font-semibold text-foreground">GridMind AI</span>
         </div>
         <Button variant="ghost" size="icon-sm" onClick={onClose} className="hover:bg-accent">
           <X className="h-4 w-4" />
@@ -124,30 +159,68 @@ export function AIChatPane({ onClose, sheetContext, onExecute }: AIChatPaneProps
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((msg, i) => (
-          <div key={i} className={`flex gap-2.5 animate-fade-in ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
-            <div className={`flex-shrink-0 h-7 w-7 rounded-lg flex items-center justify-center shadow-sm ${
-              msg.role === "assistant"
-                ? "bg-gradient-to-br from-primary to-[hsl(var(--gradient-end))] text-primary-foreground"
-                : "bg-accent text-foreground"
-            }`}>
-              {msg.role === "assistant" ? <Bot className="h-3.5 w-3.5" /> : <User className="h-3 w-3" />}
-            </div>
-            <div className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed shadow-sm ${
-              msg.role === "user"
-                ? "bg-gradient-to-br from-primary to-[hsl(var(--gradient-end))] text-primary-foreground"
-                : "bg-accent/60 text-foreground border border-border/30"
-            }`}>
-              {msg.role === "assistant" ? (
-                <div className="prose prose-xs max-w-none prose-code:bg-background prose-code:text-primary prose-code:px-1 prose-code:rounded">
-                  <ReactMarkdown>{msg.content || "▊"}</ReactMarkdown>
+        {messages.map((msg, i) => {
+          const commands = msg.role === "assistant" ? extractCommands(msg.content) : [];
+          return (
+            <div key={i} className={`flex gap-2.5 animate-fade-in ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+              <div className={`flex-shrink-0 h-7 w-7 rounded-lg flex items-center justify-center shadow-sm ${
+                msg.role === "assistant"
+                  ? "bg-gradient-to-br from-primary to-[hsl(var(--gradient-end))] text-primary-foreground"
+                  : "bg-accent text-foreground"
+              }`}>
+                {msg.role === "assistant" ? <Bot className="h-3.5 w-3.5" /> : <User className="h-3 w-3" />}
+              </div>
+              <div className="max-w-[85%] space-y-2">
+                <div className={`rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed shadow-sm ${
+                  msg.role === "user"
+                    ? "bg-gradient-to-br from-primary to-[hsl(var(--gradient-end))] text-primary-foreground"
+                    : "bg-accent/60 text-foreground border border-border/30"
+                }`}>
+                  {msg.role === "assistant" ? (
+                    <div className="prose prose-xs max-w-none prose-code:bg-background prose-code:text-primary prose-code:px-1 prose-code:rounded">
+                      <ReactMarkdown>{msg.content || "▊"}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    <span>{msg.content}</span>
+                  )}
                 </div>
-              ) : (
-                <span>{msg.content}</span>
-              )}
+                {/* Apply Changes buttons */}
+                {commands.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {commands.map((cmd, ci) => (
+                      <Button
+                        key={ci}
+                        size="sm"
+                        className="h-7 text-[10px] gap-1.5 bg-gradient-to-r from-primary to-[hsl(var(--gradient-end))] hover:opacity-90 shadow-sm"
+                        onClick={() => handleApply(cmd)}
+                      >
+                        <Play className="h-3 w-3" />
+                        Apply {cmd.action === "SET_CELLS" ? `${cmd.data?.length || 0} cell changes` : cmd.action}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
+          );
+        })}
+
+        {/* Quick action chips */}
+        {showQuickActions && (
+          <div className="flex flex-wrap gap-2 pt-2 animate-fade-in">
+            {QUICK_ACTIONS.map((action) => (
+              <button
+                key={action.label}
+                onClick={() => send(action.prompt(selectedCellLabel))}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium bg-accent/80 hover:bg-accent text-foreground border border-border/40 hover:border-primary/30 transition-all hover:shadow-sm"
+              >
+                <action.icon className="h-3 w-3 text-primary" />
+                {action.label}
+              </button>
+            ))}
           </div>
-        ))}
+        )}
+
         {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
           <div className="flex gap-2.5 animate-fade-in">
             <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-primary to-[hsl(var(--gradient-end))] flex items-center justify-center flex-shrink-0 shadow-sm">
@@ -169,7 +242,7 @@ export function AIChatPane({ onClose, sheetContext, onExecute }: AIChatPaneProps
           <textarea
             ref={inputRef}
             className="flex-1 resize-none rounded-xl border border-border/50 bg-card px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 min-h-[60px] max-h-[120px] transition-all"
-            placeholder="Ask about formulas, data analysis..."
+            placeholder="Ask about formulas, debug errors, test scenarios..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
@@ -178,7 +251,7 @@ export function AIChatPane({ onClose, sheetContext, onExecute }: AIChatPaneProps
           />
           <Button
             size="icon-sm"
-            onClick={send}
+            onClick={() => send()}
             disabled={!input.trim() || isLoading}
             className="h-9 w-9 flex-shrink-0 rounded-xl bg-gradient-to-br from-primary to-[hsl(var(--gradient-end))] hover:opacity-90 shadow-md shadow-primary/20"
           >

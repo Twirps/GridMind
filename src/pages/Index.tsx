@@ -179,19 +179,50 @@ export default function Index() {
   }, [selectedCell, updateActiveSheet]);
 
   const getSheetContext = () => {
-    const lines: string[] = [`Sheet: ${activeSheet.name}`];
-    const cellEntries = Object.entries(activeSheet.cells).slice(0, 100);
-    if (cellEntries.length > 0) {
-      lines.push("Data:");
-      cellEntries.forEach(([key, cell]) => {
-        const [r, c] = key.split(",").map(Number);
-        const colStr = String.fromCharCode(65 + c);
-        const val = cell.computed !== undefined ? cell.computed : cell.value;
-        if (val) lines.push(`  ${colStr}${r + 1}: ${val}${cell.formula ? ` (fn: ${cell.formula})` : ""}`);
-      });
+    const lines: string[] = [];
+    // Include all sheets
+    sheets.forEach((sheet) => {
+      lines.push(`\n=== Sheet: ${sheet.name} ===`);
+      const cellEntries = Object.entries(sheet.cells).slice(0, 200);
+      const errors: string[] = [];
+      if (cellEntries.length > 0) {
+        cellEntries.forEach(([key, cell]) => {
+          const [r, c] = key.split(",").map(Number);
+          const colStr = String.fromCharCode(65 + c);
+          const ref = `${colStr}${r + 1}`;
+          const val = cell.computed !== undefined ? cell.computed : cell.value;
+          const formula = cell.formula ? ` | Formula: ${cell.formula}` : "";
+          const valStr = String(val || "");
+          if (valStr.startsWith("#") || valStr.includes("REF!") || valStr.includes("VALUE!") || valStr.includes("DIV/0!") || valStr.includes("NAME?") || valStr.includes("N/A")) {
+            errors.push(`  ⚠️ ${ref}: ${valStr}${formula}`);
+          }
+          if (val) lines.push(`  ${ref}: ${val}${formula}`);
+        });
+      }
+      if (errors.length > 0) {
+        lines.push(`\nErrors found in ${sheet.name}:`);
+        lines.push(...errors);
+      }
+    });
+    // Include selected cell info
+    if (selectedCell) {
+      const colStr = String.fromCharCode(65 + selectedCell.col);
+      const ref = `${colStr}${selectedCell.row + 1}`;
+      const cellData = activeSheet.cells[cellKey(selectedCell.row, selectedCell.col)];
+      lines.push(`\nCurrently selected: ${ref}`);
+      if (cellData) {
+        lines.push(`  Value: ${cellData.computed ?? cellData.value}`);
+        if (cellData.formula) lines.push(`  Formula: ${cellData.formula}`);
+      } else {
+        lines.push(`  (empty)`);
+      }
     }
     return lines.join("\n");
   };
+
+  const selectedCellLabel = selectedCell
+    ? `${String.fromCharCode(65 + selectedCell.col)}${selectedCell.row + 1}`
+    : undefined;
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-background">
@@ -297,6 +328,7 @@ export default function Index() {
               onClose={() => setAiOpen(false)}
               sheetContext={getSheetContext()}
               onExecute={handleAIExecute}
+              selectedCellLabel={selectedCellLabel}
             />
           </div>
         )}
