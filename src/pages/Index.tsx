@@ -28,6 +28,12 @@ let sheetCounter = 2;
 
 export default function Index() {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const isGuest = searchParams.get("guest") === "true";
+  const spreadsheetId = searchParams.get("id");
+
   const [sheets, setSheets] = useState<SheetData[]>([computeSheet(createSheet("Sheet1", "sheet-1"))]);
   const [activeSheetId, setActiveSheetId] = useState("sheet-1");
   const [selectedCell, setSelectedCell] = useState<CellAddress | null>({ row: 0, col: 0 });
@@ -35,6 +41,55 @@ export default function Index() {
   const [history, setHistory] = useState<SheetData[][]>([]);
   const [future, setFuture] = useState<SheetData[][]>([]);
   const [aiOpen, setAiOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [docName, setDocName] = useState("Untitled Spreadsheet");
+
+  // Load spreadsheet from DB if id is provided
+  useEffect(() => {
+    if (spreadsheetId && user) {
+      supabase
+        .from("spreadsheets")
+        .select("name, data")
+        .eq("id", spreadsheetId)
+        .single()
+        .then(({ data, error }) => {
+          if (error || !data) {
+            toast({ title: "Error", description: "Could not load spreadsheet", variant: "destructive" });
+            return;
+          }
+          setDocName(data.name);
+          const loaded = (data.data as unknown as SheetData[]) ?? [];
+          if (loaded.length > 0) {
+            setSheets(loaded.map((s) => computeSheet(s)));
+            setActiveSheetId(loaded[0].id);
+          }
+        });
+    }
+  }, [spreadsheetId, user]);
+
+  const handleSave = async () => {
+    if (!user || isGuest) return;
+    setSaving(true);
+    try {
+      if (spreadsheetId) {
+        await supabase.from("spreadsheets").update({ data: sheets as any, name: docName }).eq("id", spreadsheetId);
+      } else {
+        const { data, error } = await supabase
+          .from("spreadsheets")
+          .insert({ user_id: user.id, name: docName, data: sheets as any })
+          .select("id")
+          .single();
+        if (data && !error) {
+          window.history.replaceState(null, "", `/editor?id=${data.id}`);
+        }
+      }
+      toast({ title: "Saved!" });
+    } catch {
+      toast({ title: "Save failed", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const activeSheet = sheets.find((s) => s.id === activeSheetId) ?? sheets[0];
   const selectedCellData = selectedCell
