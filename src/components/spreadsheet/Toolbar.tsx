@@ -24,7 +24,7 @@ export function Toolbar({ cellStyle, onStyleChange, onUndo, onRedo, canUndo, can
   };
 
   return (
-    <div className="toolbar flex items-center gap-1 px-3 py-1.5 border-b border-border/50 glass select-none flex-wrap">
+    <div className="flex items-center gap-1 px-3 py-1.5 border-b border-border bg-background select-none flex-wrap">
       {/* Undo/Redo */}
       <Button variant="toolbar" size="icon-sm" onClick={onUndo} disabled={!canUndo} title="Undo">
         <Undo className="h-3.5 w-3.5" />
@@ -33,14 +33,14 @@ export function Toolbar({ cellStyle, onStyleChange, onUndo, onRedo, canUndo, can
         <Redo className="h-3.5 w-3.5" />
       </Button>
 
-      <Separator orientation="vertical" className="h-5 mx-1.5 bg-border/50" />
+      <Separator orientation="vertical" className="h-5 mx-1.5" />
 
       {/* Font size */}
       <Select
         value={String(cellStyle.fontSize ?? 12)}
         onValueChange={(v) => onStyleChange({ fontSize: Number(v) })}
       >
-        <SelectTrigger className="h-7 w-14 text-xs border-border/50 bg-card rounded-lg">
+        <SelectTrigger className="h-7 w-14 text-xs border-border bg-background rounded">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -50,10 +50,10 @@ export function Toolbar({ cellStyle, onStyleChange, onUndo, onRedo, canUndo, can
         </SelectContent>
       </Select>
 
-      <Separator orientation="vertical" className="h-5 mx-1.5 bg-border/50" />
+      <Separator orientation="vertical" className="h-5 mx-1.5" />
 
       {/* Bold/Italic/Underline/Wrap */}
-      <div className="flex items-center gap-0.5 bg-accent/40 rounded-lg p-0.5">
+      <div className="flex items-center gap-0.5">
         <Button variant={cellStyle.bold ? "toolbar-active" : "toolbar"} size="icon-sm" onClick={() => toggle("bold")} title="Bold (Ctrl+B)">
           <Bold className="h-3.5 w-3.5" />
         </Button>
@@ -68,10 +68,10 @@ export function Toolbar({ cellStyle, onStyleChange, onUndo, onRedo, canUndo, can
         </Button>
       </div>
 
-      <Separator orientation="vertical" className="h-5 mx-1.5 bg-border/50" />
+      <Separator orientation="vertical" className="h-5 mx-1.5" />
 
       {/* Alignment */}
-      <div className="flex items-center gap-0.5 bg-accent/40 rounded-lg p-0.5">
+      <div className="flex items-center gap-0.5">
         <Button variant={cellStyle.align === "left" || !cellStyle.align ? "toolbar-active" : "toolbar"} size="icon-sm" onClick={() => onStyleChange({ align: "left" })} title="Align Left">
           <AlignLeft className="h-3.5 w-3.5" />
         </Button>
@@ -83,7 +83,7 @@ export function Toolbar({ cellStyle, onStyleChange, onUndo, onRedo, canUndo, can
         </Button>
       </div>
 
-      <Separator orientation="vertical" className="h-5 mx-1.5 bg-border/50" />
+      <Separator orientation="vertical" className="h-5 mx-1.5" />
 
       {/* Colors */}
       <div className="flex items-center gap-1.5">
@@ -91,7 +91,7 @@ export function Toolbar({ cellStyle, onStyleChange, onUndo, onRedo, canUndo, can
           <span className="text-[9px] text-muted-foreground leading-none font-medium">BG</span>
           <input
             type="color"
-            className="h-5 w-7 cursor-pointer rounded-md border border-border/50 p-0"
+            className="h-5 w-7 cursor-pointer rounded border border-border p-0"
             value={cellStyle.bgColor ?? "#ffffff"}
             onChange={(e) => onStyleChange({ bgColor: e.target.value })}
           />
@@ -100,7 +100,7 @@ export function Toolbar({ cellStyle, onStyleChange, onUndo, onRedo, canUndo, can
           <span className="text-[9px] text-muted-foreground leading-none font-medium">TXT</span>
           <input
             type="color"
-            className="h-5 w-7 cursor-pointer rounded-md border border-border/50 p-0"
+            className="h-5 w-7 cursor-pointer rounded border border-border p-0"
             value={cellStyle.textColor ?? "#000000"}
             onChange={(e) => onStyleChange({ textColor: e.target.value })}
           />

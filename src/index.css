@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: 220 20% 97%;
+    --background: 0 0% 100%;
     --foreground: 222 14% 12%;
 
     --card: 0 0% 100%;
@@ -16,38 +16,38 @@
     --primary: 221 83% 53%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 215 20% 93%;
+    --secondary: 220 14% 96%;
     --secondary-foreground: 222 14% 12%;
 
     --muted: 220 14% 96%;
-    --muted-foreground: 220 10% 45%;
+    --muted-foreground: 220 9% 46%;
 
-    --accent: 215 25% 92%;
+    --accent: 220 14% 96%;
     --accent-foreground: 222 14% 12%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 90%;
-    --input: 220 13% 88%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
     --ring: 221 83% 53%;
 
     --radius: 0.5rem;
 
     /* Spreadsheet specific */
-    --toolbar-bg: 220 20% 98%;
-    --toolbar-hover: 215 25% 92%;
-    --toolbar-active: 221 60% 90%;
-    --grid-border: 220 13% 88%;
-    --grid-header-bg: 220 16% 96%;
-    --grid-header-fg: 220 10% 35%;
-    --cell-selected: 221 83% 95%;
+    --toolbar-bg: 0 0% 100%;
+    --toolbar-hover: 220 14% 96%;
+    --toolbar-active: 221 83% 95%;
+    --grid-border: 220 13% 91%;
+    --grid-header-bg: 220 14% 97%;
+    --grid-header-fg: 220 9% 46%;
+    --cell-selected: 221 83% 97%;
     --cell-selected-border: 221 83% 53%;
     --formula-bar-bg: 0 0% 100%;
     --sheet-tab-active: 0 0% 100%;
-    --sheet-tab-bg: 220 14% 93%;
+    --sheet-tab-bg: 220 14% 96%;
 
-    --sidebar-background: 0 0% 98%;
+    --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 240 5.9% 10%;
     --sidebar-primary-foreground: 0 0% 98%;
@@ -55,11 +55,6 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 221 83% 53%;
-
-    /* Modern extras */
-    --glass-bg: 0 0% 100% / 0.7;
-    --gradient-start: 221 83% 53%;
-    --gradient-end: 262 83% 58%;
   }
 }
 
@@ -72,26 +67,6 @@
     font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
     font-size: 13px;
   }
-}
-
-/* Modern background patterns */
-.mesh-gradient {
-  background:
-    radial-gradient(ellipse 80% 50% at 20% 40%, hsl(221 83% 53% / 0.08), transparent),
-    radial-gradient(ellipse 60% 60% at 80% 20%, hsl(262 83% 58% / 0.06), transparent),
-    radial-gradient(ellipse 50% 50% at 50% 80%, hsl(200 80% 60% / 0.05), transparent);
-}
-
-.dot-pattern {
-  background-image: radial-gradient(hsl(var(--foreground) / 0.06) 1px, transparent 1px);
-  background-size: 24px 24px;
-}
-
-/* Glassmorphism */
-.glass {
-  background: hsl(var(--glass-bg));
-  backdrop-filter: blur(16px) saturate(1.8);
-  -webkit-backdrop-filter: blur(16px) saturate(1.8);
 }
 
 /* Spreadsheet cell styles */
@@ -113,22 +88,4 @@
   font-size: inherit;
   font-family: inherit;
   padding: 1px 3px;
-}
-
-/* Shimmer loading */
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-
-.shimmer {
-  position: relative;
-  overflow: hidden;
-}
-.shimmer::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.05), transparent);
-  animation: shimmer 2s infinite;
 }

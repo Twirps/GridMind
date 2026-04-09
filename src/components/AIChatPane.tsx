@@ -143,38 +143,36 @@ export function AIChatPane({ onClose, sheetContext, onExecute, selectedCellLabel
   const showQuickActions = messages.length <= 1 && !isLoading;
 
   return (
-    <div className="flex flex-col h-full bg-card" style={{ width: 400 }}>
+    <div className="flex flex-col h-full bg-card" style={{ width: 380 }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-gradient-to-r from-primary/5 to-[hsl(var(--gradient-end)/0.05)] flex-shrink-0">
-        <div className="flex items-center gap-2.5">
-          <div className="bg-gradient-to-br from-primary to-[hsl(var(--gradient-end))] p-1.5 rounded-lg shadow-sm">
-            <Sparkles className="h-3.5 w-3.5 text-primary-foreground" />
-          </div>
-          <span className="text-sm font-semibold text-foreground">GridMind AI</span>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-primary" />
+          <span className="text-sm font-medium text-foreground">GridMind AI</span>
         </div>
-        <Button variant="ghost" size="icon-sm" onClick={onClose} className="hover:bg-accent">
+        <Button variant="ghost" size="icon-sm" onClick={onClose}>
           <X className="h-4 w-4" />
         </Button>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.map((msg, i) => {
           const commands = msg.role === "assistant" ? extractCommands(msg.content) : [];
           return (
-            <div key={i} className={`flex gap-2.5 animate-fade-in ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
-              <div className={`flex-shrink-0 h-7 w-7 rounded-lg flex items-center justify-center shadow-sm ${
+            <div key={i} className={`flex gap-2 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+              <div className={`flex-shrink-0 h-6 w-6 rounded flex items-center justify-center text-xs ${
                 msg.role === "assistant"
-                  ? "bg-gradient-to-br from-primary to-[hsl(var(--gradient-end))] text-primary-foreground"
-                  : "bg-accent text-foreground"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground"
               }`}>
-                {msg.role === "assistant" ? <Bot className="h-3.5 w-3.5" /> : <User className="h-3 w-3" />}
+                {msg.role === "assistant" ? <Bot className="h-3 w-3" /> : <User className="h-3 w-3" />}
               </div>
-              <div className="max-w-[85%] space-y-2">
-                <div className={`rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed shadow-sm ${
+              <div className="max-w-[85%] space-y-1.5">
+                <div className={`rounded-lg px-3 py-2 text-xs leading-relaxed ${
                   msg.role === "user"
-                    ? "bg-gradient-to-br from-primary to-[hsl(var(--gradient-end))] text-primary-foreground"
-                    : "bg-accent/60 text-foreground border border-border/30"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-foreground"
                 }`}>
                   {msg.role === "assistant" ? (
                     <div className="prose prose-xs max-w-none prose-code:bg-background prose-code:text-primary prose-code:px-1 prose-code:rounded">
@@ -184,14 +182,13 @@ export function AIChatPane({ onClose, sheetContext, onExecute, selectedCellLabel
                     <span>{msg.content}</span>
                   )}
                 </div>
-                {/* Apply Changes buttons */}
                 {commands.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
                     {commands.map((cmd, ci) => (
                       <Button
                         key={ci}
                         size="sm"
-                        className="h-7 text-[10px] gap-1.5 bg-gradient-to-r from-primary to-[hsl(var(--gradient-end))] hover:opacity-90 shadow-sm"
+                        className="h-7 text-[10px] gap-1.5"
                         onClick={() => handleApply(cmd)}
                       >
                         <Play className="h-3 w-3" />
@@ -205,16 +202,15 @@ export function AIChatPane({ onClose, sheetContext, onExecute, selectedCellLabel
           );
         })}
 
-        {/* Quick action chips */}
         {showQuickActions && (
-          <div className="flex flex-wrap gap-2 pt-2 animate-fade-in">
+          <div className="flex flex-wrap gap-1.5 pt-1">
             {QUICK_ACTIONS.map((action) => (
               <button
                 key={action.label}
                 onClick={() => send(action.prompt(selectedCellLabel))}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium bg-accent/80 hover:bg-accent text-foreground border border-border/40 hover:border-primary/30 transition-all hover:shadow-sm"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-medium bg-muted hover:bg-accent text-foreground border border-border transition-colors"
               >
-                <action.icon className="h-3 w-3 text-primary" />
+                <action.icon className="h-3 w-3 text-muted-foreground" />
                 {action.label}
               </button>
             ))}
@@ -222,14 +218,14 @@ export function AIChatPane({ onClose, sheetContext, onExecute, selectedCellLabel
         )}
 
         {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
-          <div className="flex gap-2.5 animate-fade-in">
-            <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-primary to-[hsl(var(--gradient-end))] flex items-center justify-center flex-shrink-0 shadow-sm">
-              <Bot className="h-3.5 w-3.5 text-primary-foreground" />
+          <div className="flex gap-2">
+            <div className="h-6 w-6 rounded bg-primary flex items-center justify-center flex-shrink-0">
+              <Bot className="h-3 w-3 text-primary-foreground" />
             </div>
-            <div className="bg-accent/60 border border-border/30 rounded-2xl px-4 py-3 flex gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 animate-bounce" style={{ animationDelay: "0ms" }} />
-              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 animate-bounce" style={{ animationDelay: "150ms" }} />
-              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 animate-bounce" style={{ animationDelay: "300ms" }} />
+            <div className="bg-muted rounded-lg px-3 py-2.5 flex gap-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: "0ms" }} />
+              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: "150ms" }} />
+              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: "300ms" }} />
             </div>
           </div>
         )}
@@ -237,11 +233,11 @@ export function AIChatPane({ onClose, sheetContext, onExecute, selectedCellLabel
       </div>
 
       {/* Input */}
-      <div className="border-t border-border/50 p-3 flex-shrink-0 bg-accent/20">
+      <div className="border-t border-border p-3 flex-shrink-0">
         <div className="flex gap-2 items-end">
           <textarea
             ref={inputRef}
-            className="flex-1 resize-none rounded-xl border border-border/50 bg-card px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 min-h-[60px] max-h-[120px] transition-all"
+            className="flex-1 resize-none rounded-md border border-border bg-background px-3 py-2 text-xs outline-none focus:ring-1 focus:ring-ring min-h-[56px] max-h-[120px]"
             placeholder="Ask about formulas, debug errors, test scenarios..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -253,12 +249,12 @@ export function AIChatPane({ onClose, sheetContext, onExecute, selectedCellLabel
             size="icon-sm"
             onClick={() => send()}
             disabled={!input.trim() || isLoading}
-            className="h-9 w-9 flex-shrink-0 rounded-xl bg-gradient-to-br from-primary to-[hsl(var(--gradient-end))] hover:opacity-90 shadow-md shadow-primary/20"
+            className="h-8 w-8 flex-shrink-0 rounded-md"
           >
             {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
           </Button>
         </div>
-        <p className="text-[10px] text-muted-foreground mt-1.5 px-1">Enter to send · Shift+Enter for new line</p>
+        <p className="text-[10px] text-muted-foreground mt-1.5 px-0.5">Enter to send · Shift+Enter for new line</p>
       </div>
     </div>
   );
