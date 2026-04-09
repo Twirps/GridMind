@@ -180,7 +180,6 @@ export default function Index() {
 
   const getSheetContext = () => {
     const lines: string[] = [];
-    // Include all sheets
     sheets.forEach((sheet) => {
       lines.push(`\n=== Sheet: ${sheet.name} ===`);
       const cellEntries = Object.entries(sheet.cells).slice(0, 200);
@@ -204,7 +203,6 @@ export default function Index() {
         lines.push(...errors);
       }
     });
-    // Include selected cell info
     if (selectedCell) {
       const colStr = String.fromCharCode(65 + selectedCell.col);
       const ref = `${colStr}${selectedCell.row + 1}`;
@@ -227,46 +225,40 @@ export default function Index() {
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-background">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border/50 glass flex-shrink-0 z-20">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-background flex-shrink-0 z-20">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon-sm" onClick={() => navigate("/")} className="mr-1 hover:bg-accent">
+          <Button variant="ghost" size="icon-sm" onClick={() => navigate("/")} className="mr-1">
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div className="bg-gradient-to-br from-primary to-[hsl(var(--gradient-end))] p-1.5 rounded-lg shadow-md shadow-primary/20">
-            <Zap className="h-4 w-4 text-primary-foreground" />
+          <div className="bg-primary p-1.5 rounded-md">
+            <Zap className="h-3.5 w-3.5 text-primary-foreground" />
           </div>
           {user && !isGuest ? (
             <input
-              className="text-sm font-bold tracking-tight text-foreground bg-transparent border-none outline-none focus:ring-1 focus:ring-ring rounded px-1"
+              className="text-sm font-medium text-foreground bg-transparent border-none outline-none focus:ring-1 focus:ring-ring rounded px-1"
               value={docName}
               onChange={(e) => setDocName(e.target.value)}
             />
           ) : (
-            <span className="text-sm font-bold tracking-tight text-foreground">GridMind AI</span>
+            <span className="text-sm font-medium text-foreground">GridMind AI</span>
           )}
           {isGuest && (
-            <span className="text-[10px] text-muted-foreground bg-accent/80 px-2.5 py-0.5 rounded-full font-medium border border-border/50">Guest Mode</span>
+            <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded font-medium">Guest</span>
           )}
         </div>
 
         <div className="flex items-center gap-2">
           {user && !isGuest && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 text-xs gap-2 hover:border-primary/30 hover:bg-primary/5 transition-colors"
-              onClick={handleSave}
-              disabled={saving}
-            >
-              <Save className="h-4 w-4" />
+            <Button variant="outline" size="sm" className="h-8 text-xs gap-2" onClick={handleSave} disabled={saving}>
+              <Save className="h-3.5 w-3.5" />
               {saving ? "Saving..." : "Save"}
             </Button>
           )}
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 text-xs gap-2 hover:bg-accent">
-                <Download className="h-4 w-4" />
+              <Button variant="ghost" size="sm" className="h-8 text-xs gap-2">
+                <Download className="h-3.5 w-3.5" />
                 Export
               </Button>
             </DropdownMenuTrigger>
@@ -283,14 +275,10 @@ export default function Index() {
           <Button
             variant={aiOpen ? "default" : "outline"}
             size="sm"
-            className={`h-8 px-4 text-xs gap-2 transition-all ${
-              aiOpen
-                ? "bg-gradient-to-r from-primary to-[hsl(var(--gradient-end))] shadow-lg shadow-primary/25"
-                : "hover:border-primary/30 hover:bg-primary/5"
-            }`}
+            className="h-8 px-4 text-xs gap-2"
             onClick={() => setAiOpen((v) => !v)}
           >
-            <Sparkles className="h-4 w-4" />
+            <Sparkles className="h-3.5 w-3.5" />
             {aiOpen ? "Hide AI" : "AI Assistant"}
           </Button>
         </div>
@@ -323,7 +311,7 @@ export default function Index() {
         />
 
         {aiOpen && (
-          <div className="w-[400px] border-l border-border/50 bg-card shadow-2xl z-10 animate-slide-in-right">
+          <div className="w-[380px] border-l border-border bg-card z-10">
             <AIChatPane
               onClose={() => setAiOpen(false)}
               sheetContext={getSheetContext()}
