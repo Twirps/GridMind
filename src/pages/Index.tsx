@@ -328,6 +328,7 @@ export default function Index() {
               onClose={() => setAiOpen(false)}
               sheetContext={getSheetContext()}
               onExecute={handleAIExecute}
+              selectedCellLabel={selectedCellLabel}
             />
           </div>
         )}
