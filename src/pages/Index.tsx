@@ -1,11 +1,14 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { SpreadsheetGrid } from "@/components/spreadsheet/SpreadsheetGrid";
 import { FormulaBar } from "@/components/spreadsheet/FormulaBar";
 import { Toolbar } from "@/components/spreadsheet/Toolbar";
 import { SheetTabs } from "@/components/spreadsheet/SheetTabs";
 import { AIChatPane } from "@/components/AIChatPane";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast"; 
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -14,7 +17,7 @@ import {
 } from "@/components/spreadsheet/types";
 import { computeSheet } from "@/components/spreadsheet/formulaEngine";
 import { downloadCSV, downloadExcel, downloadPDF } from "@/components/spreadsheet/downloadUtils";
-import { Sparkles, FileSpreadsheet, Download, FileText, Table, FileDown, Zap, BarChart3 } from "lucide-react";
+import { Sparkles, FileSpreadsheet, Download, FileText, Table, FileDown, Zap, Save, ArrowLeft, LogOut } from "lucide-react";
 
 
 function createSheet(name: string, id: string): SheetData {
@@ -25,6 +28,12 @@ let sheetCounter = 2;
 
 export default function Index() {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const isGuest = searchParams.get("guest") === "true";
+  const spreadsheetId = searchParams.get("id");
+
   const [sheets, setSheets] = useState<SheetData[]>([computeSheet(createSheet("Sheet1", "sheet-1"))]);
   const [activeSheetId, setActiveSheetId] = useState("sheet-1");
   const [selectedCell, setSelectedCell] = useState<CellAddress | null>({ row: 0, col: 0 });
@@ -32,6 +41,55 @@ export default function Index() {
   const [history, setHistory] = useState<SheetData[][]>([]);
   const [future, setFuture] = useState<SheetData[][]>([]);
   const [aiOpen, setAiOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [docName, setDocName] = useState("Untitled Spreadsheet");
+
+  // Load spreadsheet from DB if id is provided
+  useEffect(() => {
+    if (spreadsheetId && user) {
+      supabase
+        .from("spreadsheets")
+        .select("name, data")
+        .eq("id", spreadsheetId)
+        .single()
+        .then(({ data, error }) => {
+          if (error || !data) {
+            toast({ title: "Error", description: "Could not load spreadsheet", variant: "destructive" });
+            return;
+          }
+          setDocName(data.name);
+          const loaded = (data.data as unknown as SheetData[]) ?? [];
+          if (loaded.length > 0) {
+            setSheets(loaded.map((s) => computeSheet(s)));
+            setActiveSheetId(loaded[0].id);
+          }
+        });
+    }
+  }, [spreadsheetId, user]);
+
+  const handleSave = async () => {
+    if (!user || isGuest) return;
+    setSaving(true);
+    try {
+      if (spreadsheetId) {
+        await supabase.from("spreadsheets").update({ data: sheets as any, name: docName }).eq("id", spreadsheetId);
+      } else {
+        const { data, error } = await supabase
+          .from("spreadsheets")
+          .insert({ user_id: user.id, name: docName, data: sheets as any })
+          .select("id")
+          .single();
+        if (data && !error) {
+          window.history.replaceState(null, "", `/editor?id=${data.id}`);
+        }
+      }
+      toast({ title: "Saved!" });
+    } catch {
+      toast({ title: "Save failed", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const activeSheet = sheets.find((s) => s.id === activeSheetId) ?? sheets[0];
   const selectedCellData = selectedCell
@@ -145,27 +203,43 @@ export default function Index() {
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#f8fafc]">
-      {/* --- HEADER (Requirement: Make it Nicer) --- */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-white shadow-sm flex-shrink-0 z-20">
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-muted/30">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card shadow-sm flex-shrink-0 z-20">
         <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon-sm" onClick={() => navigate("/")} className="mr-1">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
           <div className="bg-primary/10 p-1.5 rounded-lg">
             <Zap className="h-5 w-5 text-primary animate-pulse" />
           </div>
-          <span className="text-sm font-bold tracking-tight text-slate-800 uppercase">GridMind AI</span>
+          {user && !isGuest ? (
+            <input
+              className="text-sm font-bold tracking-tight text-foreground uppercase bg-transparent border-none outline-none focus:ring-1 focus:ring-ring rounded px-1"
+              value={docName}
+              onChange={(e) => setDocName(e.target.value)}
+            />
+          ) : (
+            <span className="text-sm font-bold tracking-tight text-foreground uppercase">GridMind AI</span>
+          )}
+          {isGuest && (
+            <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Guest Mode</span>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Requirement: Auto-report Button */}
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="h-8 text-xs gap-2 text-slate-600 hover:text-primary"
-            onClick={() => { setAiOpen(true); toast({ title: "Narrative Engine", description: "Analyzing data for weekly report..." }); }}
-          >
-            <FileText className="h-4 w-4" />
-            Auto-Report
-          </Button>
+          {user && !isGuest && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs gap-2"
+              onClick={handleSave}
+              disabled={saving}
+            >
+              <Save className="h-4 w-4" />
+              {saving ? "Saving..." : "Save"}
+            </Button>
+          )}
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -187,7 +261,7 @@ export default function Index() {
           <Button
             variant={aiOpen ? "default" : "outline"}
             size="sm"
-            className={`h-8 px-4 text-xs gap-2 transition-all shadow-sm ${aiOpen ? 'bg-slate-900' : 'hover:border-primary/50'}`}
+            className="h-8 px-4 text-xs gap-2 transition-all shadow-sm"
             onClick={() => setAiOpen((v) => !v)}
           >
             <Sparkles className={`h-4 w-4 ${aiOpen ? 'animate-spin-slow' : 'text-primary'}`} />
@@ -211,7 +285,7 @@ export default function Index() {
         onCommit={(value) => { if (selectedCell) handleCellChange(selectedCell, value); }}
       />
 
-      {/* --- MAIN GRID & AI PANE --- */}
+      {/* Main grid & AI pane */}
       <div className="flex flex-1 overflow-hidden relative">
         <SpreadsheetGrid
           sheet={activeSheet}
@@ -221,13 +295,13 @@ export default function Index() {
           onCellChange={handleCellChange}
           onSelectionChange={(range) => { setSelectionRange(range); setSelectedCell(range.start); }}
         />
-        
+
         {aiOpen && (
-          <div className="w-[400px] border-l border-border bg-white shadow-2xl z-10 transition-all animate-in slide-in-from-right">
+          <div className="w-[400px] border-l border-border bg-card shadow-2xl z-10 transition-all animate-in slide-in-from-right">
             <AIChatPane
               onClose={() => setAiOpen(false)}
               sheetContext={getSheetContext()}
-              onExecute={handleAIExecute} 
+              onExecute={handleAIExecute}
             />
           </div>
         )}
@@ -244,6 +318,4 @@ export default function Index() {
     </div>
   );
 }
-
-//added set cells and delete bottom percent aswell as explainable insights -Yannic
 

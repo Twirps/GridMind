@@ -1,13 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { X, Send, Bot, User, Loader2, Sparkles } from "lucide-react";
-import { createClient } from "@supabase/supabase-js";
 import ReactMarkdown from "react-markdown";
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-);
 
 interface Message {
   role: "user" | "assistant";
@@ -17,9 +11,10 @@ interface Message {
 interface AIChatPaneProps {
   onClose: () => void;
   sheetContext?: string;
+  onExecute?: (command: any) => void;
 }
 
-export function AIChatPane({ onClose, sheetContext }: AIChatPaneProps) {
+export function AIChatPane({ onClose, sheetContext, onExecute }: AIChatPaneProps) {
   const [messages, setMessages] = useState<Message[]>([
     { role: "assistant", content: "Hi! I'm your spreadsheet AI assistant. Ask me to help with formulas, data analysis, or any Excel-like questions!" }
   ]);
