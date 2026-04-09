@@ -1,11 +1,14 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { SpreadsheetGrid } from "@/components/spreadsheet/SpreadsheetGrid";
 import { FormulaBar } from "@/components/spreadsheet/FormulaBar";
 import { Toolbar } from "@/components/spreadsheet/Toolbar";
 import { SheetTabs } from "@/components/spreadsheet/SheetTabs";
 import { AIChatPane } from "@/components/AIChatPane";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast"; 
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -14,7 +17,7 @@ import {
 } from "@/components/spreadsheet/types";
 import { computeSheet } from "@/components/spreadsheet/formulaEngine";
 import { downloadCSV, downloadExcel, downloadPDF } from "@/components/spreadsheet/downloadUtils";
-import { Sparkles, FileSpreadsheet, Download, FileText, Table, FileDown, Zap, BarChart3 } from "lucide-react";
+import { Sparkles, FileSpreadsheet, Download, FileText, Table, FileDown, Zap, Save, ArrowLeft, LogOut } from "lucide-react";
 
 
 function createSheet(name: string, id: string): SheetData {
