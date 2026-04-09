@@ -1,60 +1,55 @@
 
 
-## Plan: Dashboard Homepage with Optional Auth
+## Plan: Modern UI Refresh
 
 ### Overview
-Make the "My Spreadsheets" dashboard the homepage (`/`). It shows a blurred overlay requiring Google login to access saved sheets. A "Use Without Account" button bypasses login and opens a temporary spreadsheet editor. The editor route moves to `/editor`.
+Transform the plain, utilitarian look into a polished, modern aesthetic with subtle gradients, glassmorphism effects, refined typography, smooth animations, and a cohesive visual hierarchy -- without changing any functionality.
 
-### 1. Fix Build Error
-Add `onExecute` prop to `AIChatPaneProps` interface in `AIChatPane.tsx`.
+### Changes
 
-### 2. Database Migration
-Create `spreadsheets` table with RLS:
-```sql
-CREATE TABLE public.spreadsheets (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  name TEXT NOT NULL DEFAULT 'Untitled',
-  data JSONB NOT NULL DEFAULT '[]',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-ALTER TABLE public.spreadsheets ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users manage own spreadsheets" ON public.spreadsheets
-  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
-```
+#### 1. Color Palette and CSS Variables (`src/index.css`)
+- Shift from flat white/gray to a slightly tinted cool-gray background with subtle depth
+- Add a gradient mesh background for the dashboard page
+- Add smooth transition animations (fade-in, slide-up) as keyframes
+- Refine the spreadsheet cell styles with softer borders and smoother selection highlights
+- Add a subtle animated gradient for the AI pane header
 
-### 3. Configure Google OAuth
-Use the Configure Social Login tool to set up Google sign-in via `lovable.auth.signInWithOAuth("google")`.
+#### 2. Dashboard Page (`src/pages/Dashboard.tsx`)
+- Add a hero gradient background with animated mesh/grid pattern
+- Upgrade the header with a frosted glass effect (`backdrop-blur-xl`, semi-transparent bg)
+- Make spreadsheet cards more visually rich: subtle gradient borders on hover, slight scale transform, shadow transitions
+- Restyle the sign-in overlay card with a frosted glass aesthetic, gradient border accent, and larger typography hierarchy
+- Add a subtle grid/dot pattern behind the blurred sample cards
+- Improve the "New Spreadsheet" button with a gradient and hover animation
+- Better empty state with an illustration-style icon treatment
 
-### 4. Auth Context (`src/contexts/AuthContext.tsx`)
-- Wrap app with auth provider exposing `user`, `session`, `signOut`, `signInWithGoogle`.
-- Use `onAuthStateChange` listener for session state.
+#### 3. Editor Page (`src/pages/Index.tsx`)
+- Frosted glass header bar matching dashboard style
+- Refined save/export buttons with subtle hover states
+- AI toggle button with a gradient accent when active
+- Guest mode badge with a modern pill style
 
-### 5. New Routes & Pages
+#### 4. AI Chat Pane (`src/components/AIChatPane.tsx`)
+- Gradient header with the Sparkles icon
+- Message bubbles with softer rounded corners and subtle shadows
+- Typing indicator with animated dots instead of a spinner
+- Input area with a modern floating style and gradient send button
+- Smoother slide-in animation
 
-**`src/pages/Dashboard.tsx`** (new homepage at `/`)
-- If logged in: show grid of saved spreadsheets with open/delete/rename, plus "New Spreadsheet" button.
-- If not logged in: show the same page but **blurred** with a centered overlay containing:
-  - "Sign in with Google" button
-  - "Use Without Account" button (navigates to `/editor?guest=true`)
+#### 5. Toolbar (`src/components/spreadsheet/Toolbar.tsx`)
+- Frosted glass background instead of flat gray
+- Slightly rounded tool groups with subtle dividers
+- Better active state indicators with smooth color transitions
 
-**`src/pages/Editor.tsx`** (moved from current `Index.tsx` to `/editor`)
-- If `?guest=true`: works as-is, no save button, no DB interaction.
-- If logged in and `?id=<uuid>`: loads that spreadsheet from DB.
-- If logged in and no id: creates a new spreadsheet, shows save button.
-- Header shows user avatar + "My Sheets" link when logged in, or "Sign In" when guest.
-
-### 6. Updated Routing (`src/App.tsx`)
-```
-/          → Dashboard (homepage)
-/editor    → Spreadsheet Editor
-*          → NotFound
-```
-Wrap with `AuthProvider`.
+#### 6. Tailwind Config (`tailwind.config.ts`)
+- Add new keyframe animations: `fade-in`, `slide-up`, `shimmer`
+- Add `backdrop-blur` utilities if needed
 
 ### Files Changed
-- **New**: `src/contexts/AuthContext.tsx`, `src/pages/Dashboard.tsx`
-- **Modified**: `src/App.tsx`, `src/pages/Index.tsx` (rename/move to Editor logic), `src/components/AIChatPane.tsx` (fix props)
-- **Migration**: Create `spreadsheets` table
+- `src/index.css` -- new variables, animations, backgrounds
+- `src/pages/Dashboard.tsx` -- modern card/overlay styling
+- `src/pages/Index.tsx` -- refined header and layout
+- `src/components/AIChatPane.tsx` -- polished chat UI
+- `src/components/spreadsheet/Toolbar.tsx` -- glassmorphism toolbar
+- `tailwind.config.ts` -- new animations
 
