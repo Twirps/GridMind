@@ -1,55 +1,53 @@
 
 
-## Plan: Modern UI Refresh
+## Plan: Enhanced AI Assistant with Spreadsheet Guardrails
 
 ### Overview
-Transform the plain, utilitarian look into a polished, modern aesthetic with subtle gradients, glassmorphism effects, refined typography, smooth animations, and a cohesive visual hierarchy -- without changing any functionality.
+Upgrade the AI assistant to be a focused spreadsheet expert that can answer questions about cells/formulas, test scenarios, debug errors, and help build models -- while rejecting non-spreadsheet requests. Changes span the edge function (system prompt) and the frontend chat pane (richer context passing, quick-action buttons, and response parsing for executable commands).
 
-### Changes
+### 1. Rewrite Edge Function System Prompt (`supabase/functions/spreadsheet-ai/index.ts`)
 
-#### 1. Color Palette and CSS Variables (`src/index.css`)
-- Shift from flat white/gray to a slightly tinted cool-gray background with subtle depth
-- Add a gradient mesh background for the dashboard page
-- Add smooth transition animations (fade-in, slide-up) as keyframes
-- Refine the spreadsheet cell styles with softer borders and smoother selection highlights
-- Add a subtle animated gradient for the AI pane header
+Replace the current generic system prompt with a tightly scoped one that:
 
-#### 2. Dashboard Page (`src/pages/Dashboard.tsx`)
-- Add a hero gradient background with animated mesh/grid pattern
-- Upgrade the header with a frosted glass effect (`backdrop-blur-xl`, semi-transparent bg)
-- Make spreadsheet cards more visually rich: subtle gradient borders on hover, slight scale transform, shadow transitions
-- Restyle the sign-in overlay card with a frosted glass aesthetic, gradient border accent, and larger typography hierarchy
-- Add a subtle grid/dot pattern behind the blurred sample cards
-- Improve the "New Spreadsheet" button with a gradient and hover animation
-- Better empty state with an illustration-style icon treatment
+- **Guardrails**: Explicitly instructs the model to only respond to spreadsheet-related requests. If a user asks something unrelated (e.g., "write me a poem"), it politely declines and redirects.
+- **Cell-level citations**: When explaining formulas or values, always reference cells (e.g., "Cell B5 uses `=SUM(B2:B4)` which totals...").
+- **Scenario testing**: When the user asks "what if X changes to Y", walk through every affected cell and explain the ripple effect.
+- **Error debugging**: When the user mentions `#REF!`, `#VALUE!`, `#DIV/0!`, or circular references, trace the error chain and provide step-by-step fixes.
+- **Model building**: When asked to create a model or fill a template, output structured `SET_CELLS` commands the frontend can execute, along with explanations.
+- **Multi-sheet awareness**: Include all sheet names and data in the context so the AI can reference cross-tab formulas.
 
-#### 3. Editor Page (`src/pages/Index.tsx`)
-- Frosted glass header bar matching dashboard style
-- Refined save/export buttons with subtle hover states
-- AI toggle button with a gradient accent when active
-- Guest mode badge with a modern pill style
+### 2. Improve Context Passing (`src/pages/Index.tsx`)
 
-#### 4. AI Chat Pane (`src/components/AIChatPane.tsx`)
-- Gradient header with the Sparkles icon
-- Message bubbles with softer rounded corners and subtle shadows
-- Typing indicator with animated dots instead of a spinner
-- Input area with a modern floating style and gradient send button
-- Smoother slide-in animation
+Update `getSheetContext()` to send richer data:
+- Include **all sheets** (not just active), with sheet names as headers
+- Include **formulas** alongside computed values for every cell
+- Include the **selected cell** and its formula so the AI knows what the user is looking at
+- Include **error cells** (cells with `#REF!`, `#VALUE!`, etc.) flagged explicitly
+- Cap at a reasonable limit (e.g., 200 cells per sheet) to avoid token overflow
 
-#### 5. Toolbar (`src/components/spreadsheet/Toolbar.tsx`)
-- Frosted glass background instead of flat gray
-- Slightly rounded tool groups with subtle dividers
-- Better active state indicators with smooth color transitions
+### 3. Add Quick Action Chips to Chat Pane (`src/components/AIChatPane.tsx`)
 
-#### 6. Tailwind Config (`tailwind.config.ts`)
-- Add new keyframe animations: `fade-in`, `slide-up`, `shimmer`
-- Add `backdrop-blur` utilities if needed
+Add a row of suggestion chips below the welcome message and when the chat is idle:
+- "Explain this cell" (auto-fills with selected cell reference)
+- "Find errors" (scans for error values)
+- "Test a scenario"
+- "Build a model"
+
+These pre-fill the input with a contextual prompt.
+
+### 4. Parse AI Responses for Executable Commands (`src/components/AIChatPane.tsx`)
+
+After the AI finishes streaming, scan the response for JSON code blocks containing `{ "action": "SET_CELLS", ... }`. If found:
+- Show an "Apply Changes" button below the message
+- When clicked, call `onExecute(command)` to apply the changes to the spreadsheet
+- Highlight which cells will be affected before applying
+
+### 5. Enhanced Welcome Message
+
+Update the initial assistant message to describe the four capabilities clearly, so users know what to ask.
 
 ### Files Changed
-- `src/index.css` -- new variables, animations, backgrounds
-- `src/pages/Dashboard.tsx` -- modern card/overlay styling
-- `src/pages/Index.tsx` -- refined header and layout
-- `src/components/AIChatPane.tsx` -- polished chat UI
-- `src/components/spreadsheet/Toolbar.tsx` -- glassmorphism toolbar
-- `tailwind.config.ts` -- new animations
+- **`supabase/functions/spreadsheet-ai/index.ts`** -- new guardrailed system prompt with spreadsheet-expert persona
+- **`src/pages/Index.tsx`** -- richer `getSheetContext()` with all sheets, formulas, errors, and selected cell
+- **`src/components/AIChatPane.tsx`** -- quick action chips, "Apply Changes" button for executable responses, updated welcome message
 
