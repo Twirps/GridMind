@@ -1,32 +1,41 @@
 
 
-## Plan: Import Excel/CSV Files into GridMind
+## Plan: Draggable Column & Row Resize
 
 ### Overview
-Add an "Import" button next to the Export dropdown in the editor header. When clicked, it opens a file picker for `.xlsx`, `.xls`, or `.csv` files. The file is parsed client-side using the existing `xlsx` (SheetJS) library and converted into GridMind's `SheetData` format, replacing the current sheets.
+Add the ability to resize columns by dragging the right edge of column headers, and resize rows by dragging the bottom edge of row number headers — exactly like Excel/Google Sheets.
 
 ### Changes
 
-#### 1. New Import Utility (`src/components/spreadsheet/importUtils.ts`)
-- Create `importFromFile(file: File): Promise<SheetData[]>` function
-- For CSV: use SheetJS to parse into a worksheet, then iterate rows/cols to build `cells` record
-- For XLSX: parse all sheets, iterate each worksheet's used range, map cell values and formulas into `CellData` objects
-- Preserve formulas where possible (SheetJS exposes them via `cell.f`)
-- Return an array of `SheetData` objects ready for `computeSheet()`
+#### 1. `src/components/spreadsheet/SpreadsheetGrid.tsx`
 
-#### 2. Update Editor Page (`src/pages/Index.tsx`)
-- Add a hidden `<input type="file" accept=".xlsx,.xls,.csv">` element
-- Add an "Import" button (with `Upload` icon from lucide) next to the Export dropdown
-- On file selection, call `importFromFile()`, then `computeSheet()` on each sheet, and replace `sheets` state
-- Update `docName` to the imported filename (without extension)
-- Show a toast confirming successful import with sheet/cell count
+**Add resize props and state:**
+- Add `onColResize(col: number, width: number)` and `onRowResize(row: number, height: number)` callback props
+- Add local state for tracking active resize: `resizingCol`, `resizingRow`, `resizeStart` position, and `resizeOriginal` size
 
-### Technical Notes
-- SheetJS (`xlsx`) is already installed as a dependency (used in `downloadUtils.ts`)
-- No new dependencies needed
-- Import is purely client-side — no backend changes required
+**Column header resize handles:**
+- Add a 4px-wide invisible div on the right edge of each column header
+- On mousedown, record the column index and starting mouse X position
+- On mousemove (window listener), calculate delta and call `onColResize` with new width (min 30px)
+- On mouseup, clear resize state
+- Show `col-resize` cursor on hover/drag
+
+**Row header resize handles:**
+- Add a 4px-tall invisible div on the bottom edge of each row number cell
+- Same drag logic but for Y axis, calling `onRowResize` (min 16px)
+- Show `row-resize` cursor on hover/drag
+
+**Visual feedback:**
+- While dragging, show a thin blue guideline across the grid at the resize position
+
+#### 2. `src/pages/Index.tsx`
+
+**Add resize handlers:**
+- `handleColResize(col, width)` — updates `colWidths` on the active sheet
+- `handleRowResize(row, height)` — updates `rowHeights` on the active sheet
+- Pass both as props to `SpreadsheetGrid`
 
 ### Files Changed
-- **New**: `src/components/spreadsheet/importUtils.ts`
-- **Modified**: `src/pages/Index.tsx` (import button + handler)
+- `src/components/spreadsheet/SpreadsheetGrid.tsx` — resize handles on headers, drag logic
+- `src/pages/Index.tsx` — resize handler callbacks passed as props
 
