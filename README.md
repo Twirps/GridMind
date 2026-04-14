@@ -42,4 +42,18 @@ GridMind is built using:
 - TypeScript
 - npm
 
+## Project Structure
+
+A quick overview of the key directories in this project:
+
+- **`/src/components`**: Reusable UI components (buttons, inputs, cards).
+- **`/src/pages`**: Main application views (Dashboard, Editor, etc.).
+- **`/src/hooks`**: Custom React hooks for data fetching and state management.
+- **`/supabase`**: Database schemas and edge functions for backend integration.
+- **`tailwind.config.ts`**: Custom styling and branding configuration.
+
+## Contribution Note
+
+This project was initialized with Lovable and customized to include specific spreadsheet logic and automated reporting features.
+
 
