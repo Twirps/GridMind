@@ -315,7 +315,7 @@ export function evaluateFormula(formula: string, sheet: SheetData): string | num
     if (expr.startsWith('"') && expr.endsWith('"')) return expr.slice(1, -1);
     expr = evalFunctions(expr, sheet);
     expr = replaceRefs(expr, sheet);
-    const result = Function('"use strict"; return (' + expr + ')')();
+    const result = safeParser.evaluate(expr);
     if (typeof result === "number" && isNaN(result)) return "#NUM!";
     if (result === undefined || result === null) return "";
     if (typeof result === "number") {
