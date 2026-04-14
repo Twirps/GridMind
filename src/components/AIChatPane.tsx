@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import { X, Send, Bot, User, Loader2, Sparkles, Play, AlertTriangle, FlaskConical, LayoutTemplate, HelpCircle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
