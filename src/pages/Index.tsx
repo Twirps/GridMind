@@ -351,6 +351,18 @@ export default function Index() {
           onCellSelect={(addr) => { setSelectedCell(addr); setSelectionRange(null); }}
           onCellChange={handleCellChange}
           onSelectionChange={(range) => { setSelectionRange(range); setSelectedCell(range.start); }}
+          onColResize={(col, width) => {
+            setSheets(prev => prev.map(s => s.id === activeSheetId
+              ? { ...s, colWidths: { ...s.colWidths, [col]: width } }
+              : s
+            ));
+          }}
+          onRowResize={(row, height) => {
+            setSheets(prev => prev.map(s => s.id === activeSheetId
+              ? { ...s, rowHeights: { ...s.rowHeights, [row]: height } }
+              : s
+            ));
+          }}
         />
 
         {aiOpen && (
