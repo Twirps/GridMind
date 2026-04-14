@@ -28,6 +28,7 @@ function createSheet(name: string, id: string): SheetData {
 let sheetCounter = 2;
 
 export default function Index() {
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
