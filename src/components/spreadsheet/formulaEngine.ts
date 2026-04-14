@@ -260,7 +260,7 @@ function evalFunctions(expr: string, sheet: SheetData): string {
   // IF
   expr = expr.replace(/IF\(([^,]+),([^,]+),([^)]+)\)/gi, (_, cond, tVal, fVal) => {
     try {
-      const result = Function('"use strict"; return (' + cond.trim() + ')')();
+      const result = safeParser.evaluate(cond.trim());
       return result ? tVal.trim() : fVal.trim();
     } catch {
       return "#ERR";
