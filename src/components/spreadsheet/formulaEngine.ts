@@ -151,6 +151,9 @@ export function computeSheet(sheet: SheetData): SheetData {
 }
 */
 import { SheetData, cellKey, parseCellRef } from "./types";
+import { Parser } from "expr-eval";
+
+const safeParser = new Parser();
 
 function getCellValue(sheet: SheetData, ref: string): number | string {
   const addr = parseCellRef(ref.trim());
@@ -257,7 +260,7 @@ function evalFunctions(expr: string, sheet: SheetData): string {
   // IF
   expr = expr.replace(/IF\(([^,]+),([^,]+),([^)]+)\)/gi, (_, cond, tVal, fVal) => {
     try {
-      const result = Function('"use strict"; return (' + cond.trim() + ')')();
+      const result = safeParser.evaluate(cond.trim());
       return result ? tVal.trim() : fVal.trim();
     } catch {
       return "#ERR";
@@ -312,7 +315,7 @@ export function evaluateFormula(formula: string, sheet: SheetData): string | num
     if (expr.startsWith('"') && expr.endsWith('"')) return expr.slice(1, -1);
     expr = evalFunctions(expr, sheet);
     expr = replaceRefs(expr, sheet);
-    const result = Function('"use strict"; return (' + expr + ')')();
+    const result = safeParser.evaluate(expr);
     if (typeof result === "number" && isNaN(result)) return "#NUM!";
     if (result === undefined || result === null) return "";
     if (typeof result === "number") {
