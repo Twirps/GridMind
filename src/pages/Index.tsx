@@ -17,7 +17,8 @@ import {
 } from "@/components/spreadsheet/types";
 import { computeSheet } from "@/components/spreadsheet/formulaEngine";
 import { downloadCSV, downloadExcel, downloadPDF } from "@/components/spreadsheet/downloadUtils";
-import { Sparkles, FileSpreadsheet, Download, FileText, Table, FileDown, Zap, Save, ArrowLeft, LogOut } from "lucide-react";
+import { importFromFile } from "@/components/spreadsheet/importUtils";
+import { Sparkles, FileSpreadsheet, Download, FileText, Table, FileDown, Zap, Save, ArrowLeft, LogOut, Upload } from "lucide-react";
 
 
 function createSheet(name: string, id: string): SheetData {
