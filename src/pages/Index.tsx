@@ -20,28 +20,6 @@ import { downloadCSV, downloadExcel, downloadPDF } from "@/components/spreadshee
 import { importFromFile } from "@/components/spreadsheet/importUtils";
 import { Sparkles, FileSpreadsheet, Download, FileText, Table, FileDown, Zap, Save, ArrowLeft, LogOut, Upload } from "lucide-react";
 
-  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      const imported = await importFromFile(file);
-      if (imported.length === 0) {
-        toast({ title: "Import failed", description: "No data found in file", variant: "destructive" });
-        return;
-      }
-      const computed = imported.map((s) => computeSheet(s));
-      updateSheets(computed);
-      setActiveSheetId(computed[0].id);
-      setSelectedCell({ row: 0, col: 0 });
-      const name = file.name.replace(/\.(xlsx|xls|csv)$/i, "");
-      setDocName(name);
-      const totalCells = computed.reduce((sum, s) => sum + Object.keys(s.cells).length, 0);
-      toast({ title: "Imported!", description: `${computed.length} sheet(s), ${totalCells} cells loaded` });
-    } catch {
-      toast({ title: "Import failed", description: "Could not parse the file", variant: "destructive" });
-    }
-    e.target.value = "";
-  };
 
 function createSheet(name: string, id: string): SheetData {
   return { id, name, cells: {}, colWidths: {}, rowHeights: {} };
