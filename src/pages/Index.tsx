@@ -18,8 +18,7 @@ import {
 import { computeSheet } from "@/components/spreadsheet/formulaEngine";
 import { downloadCSV, downloadExcel, downloadPDF } from "@/components/spreadsheet/downloadUtils";
 import { importFromFile } from "@/components/spreadsheet/importUtils";
-import { Sparkles, FileSpreadsheet, Download, FileText, Table, FileDown, Zap, Save, ArrowLeft, LogOut, Upload } from "lucide-react";
-
+import { Sparkles, Download, Table, FileDown, Zap, Save, ArrowLeft, Upload } from "lucide-react";
 
 function createSheet(name: string, id: string): SheetData {
   return { id, name, cells: {}, colWidths: {}, rowHeights: {} };
@@ -107,6 +106,29 @@ export default function Index() {
     const newSheets = sheets.map((s) => s.id === activeSheetId ? computeSheet(updater(s)) : s);
     updateSheets(newSheets);
   }, [sheets, activeSheetId, updateSheets]);
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const imported = await importFromFile(file);
+      if (imported.length === 0) {
+        toast({ title: "Import failed", description: "No data found in file", variant: "destructive" });
+        return;
+      }
+      const computed = imported.map((s) => computeSheet(s));
+      updateSheets(computed);
+      setActiveSheetId(computed[0].id);
+      setSelectedCell({ row: 0, col: 0 });
+      const name = file.name.replace(/\.(xlsx|xls|csv)$/i, "");
+      setDocName(name);
+      const totalCells = computed.reduce((sum, s) => sum + Object.keys(s.cells).length, 0);
+      toast({ title: "Imported!", description: `${computed.length} sheet(s), ${totalCells} cells loaded` });
+    } catch {
+      toast({ title: "Import failed", description: "Could not parse the file", variant: "destructive" });
+    }
+    e.target.value = "";
+  };
 
   const handleAIExecute = useCallback((command: any) => {
     updateActiveSheet((sheet) => {
@@ -226,6 +248,15 @@ export default function Index() {
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-background">
+      {/* Hidden file input for import */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".xlsx,.xls,.csv"
+        className="hidden"
+        onChange={handleImport}
+      />
+
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-background flex-shrink-0 z-20">
         <div className="flex items-center gap-3">
@@ -257,6 +288,16 @@ export default function Index() {
             </Button>
           )}
 
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 text-xs gap-2"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload className="h-3.5 w-3.5" />
+            Import
+          </Button>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="h-8 text-xs gap-2">
@@ -269,7 +310,7 @@ export default function Index() {
                 <FileDown className="h-3.5 w-3.5" /> Download CSV
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => downloadExcel(sheets)} className="gap-2 text-xs">
-                <Table className="h-3.5 w-3.5 text-green-600" /> Download Excel
+                <Table className="h-3.5 w-3.5" /> Download Excel
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
