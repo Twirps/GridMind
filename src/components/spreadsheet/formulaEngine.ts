@@ -151,6 +151,9 @@ export function computeSheet(sheet: SheetData): SheetData {
 }
 */
 import { SheetData, cellKey, parseCellRef } from "./types";
+import { Parser } from "expr-eval";
+
+const safeParser = new Parser();
 
 function getCellValue(sheet: SheetData, ref: string): number | string {
   const addr = parseCellRef(ref.trim());
