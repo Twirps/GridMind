@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { SpreadsheetGrid } from "@/components/spreadsheet/SpreadsheetGrid";
 import { FormulaBar } from "@/components/spreadsheet/FormulaBar";
@@ -28,7 +28,7 @@ function createSheet(name: string, id: string): SheetData {
 let sheetCounter = 2;
 
 export default function Index() {
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
