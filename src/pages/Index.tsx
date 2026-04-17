@@ -406,6 +406,8 @@ export default function Index() {
               : s
             ));
           }}
+          onToggleRowGroup={handleToggleRowGroup}
+          onToggleColGroup={handleToggleColGroup}
         />
 
         {aiOpen && (
