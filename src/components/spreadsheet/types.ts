@@ -66,6 +66,8 @@ export function parseCellRef(ref: string): CellAddress | null {
   return { row: rowNum, col };
 }
 */
+export type WrapMode = "overflow" | "wrap" | "clip";
+
 export interface CellData {
   value: string;
   formula?: string;
@@ -77,7 +79,7 @@ export interface CellData {
   bgColor?: string;
   textColor?: string;
   fontSize?: number;
-  wrap?: boolean;
+  wrapMode?: WrapMode;
   // --- NEW AI FIELDS ---
   metadata?: {
     aiGenerated?: boolean;

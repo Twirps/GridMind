@@ -167,9 +167,18 @@ export function SpreadsheetGrid({
     const w = getColWidth(col);
     const h = getRowHeight(row);
 
+    const wrapMode: "overflow" | "wrap" | "clip" = cell?.wrapMode ?? "overflow";
+
+    // Overflow only spills if there's text AND right neighbor is empty
+    const rightKey = cellKey(row, col + 1);
+    const rightCell = sheet.cells[rightKey];
+    const rightEmpty =
+      !rightCell ||
+      (rightCell.value === "" && rightCell.computed === undefined && !rightCell.formula);
+    const canOverflow = wrapMode === "overflow" && rightEmpty && String(displayVal).length > 0;
+
     const style: React.CSSProperties = {
       width: w, minWidth: w, maxWidth: w,
-      height: h, minHeight: h,
       fontWeight: cell?.bold ? "bold" : undefined,
       fontStyle: cell?.italic ? "italic" : undefined,
       textDecoration: cell?.underline ? "underline" : undefined,
@@ -183,7 +192,23 @@ export function SpreadsheetGrid({
             : undefined,
       color: cell?.textColor ?? undefined,
       fontSize: cell?.fontSize ? `${cell.fontSize}px` : undefined,
+      // Wrap mode → grow row; non-wrap uses minHeight so it can stretch to taller siblings
+      ...(wrapMode === "wrap"
+        ? { minHeight: h, height: "auto" as const }
+        : { minHeight: h }),
+      // Allow overflow to escape only when canOverflow
+      overflow: canOverflow ? "visible" : "hidden",
     };
+
+    let contentClass = "block px-[3px] py-[1px] select-none h-full ";
+    if (wrapMode === "wrap") {
+      contentClass += "whitespace-pre-wrap break-words";
+    } else if (wrapMode === "clip") {
+      contentClass += "overflow-hidden whitespace-nowrap";
+    } else {
+      // overflow
+      contentClass += "whitespace-nowrap";
+    }
 
     return (
       <div
@@ -221,10 +246,20 @@ export function SpreadsheetGrid({
               else if (e.key === "Escape") setEditingCell(null);
             }}
           />
+        ) : canOverflow ? (
+          // Overflow mode: absolutely-positioned span that can spill over empty neighbor
+          <span
+            className={contentClass + " absolute top-0 left-0 pointer-events-none"}
+            style={{
+              width: "max-content",
+              maxWidth: "none",
+              textAlign: cell?.align ?? "left",
+            }}
+          >
+            {String(displayVal)}
+          </span>
         ) : (
-          <span className={`block px-[3px] py-[1px] select-none h-full ${
-            cell?.wrap ? "whitespace-pre-wrap break-words" : "overflow-hidden whitespace-nowrap text-ellipsis"
-          }`}>
+          <span className={contentClass}>
             {String(displayVal)}
           </span>
         )}

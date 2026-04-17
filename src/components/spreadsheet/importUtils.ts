@@ -3,7 +3,7 @@ import { SheetData, CellData, cellKey } from "./types";
 
 export async function importFromFile(file: File): Promise<SheetData[]> {
   const data = await file.arrayBuffer();
-  const wb = XLSX.read(data, { cellFormula: true, cellStyles: false });
+  const wb = XLSX.read(data, { cellFormula: true, cellStyles: true });
 
   return wb.SheetNames.map((name, idx) => {
     const ws = wb.Sheets[name];
@@ -23,6 +23,17 @@ export async function importFromFile(file: File): Promise<SheetData[]> {
           cellData.value = cell.v != null ? String(cell.v) : "";
         } else if (cell.v != null) {
           cellData.value = String(cell.v);
+        }
+
+        // Read style info (wrapText + horizontal alignment)
+        const style: any = (cell as any).s;
+        const alignment = style?.alignment;
+        if (alignment?.wrapText) {
+          cellData.wrapMode = "wrap";
+        }
+        const horiz = alignment?.horizontal;
+        if (horiz === "left" || horiz === "center" || horiz === "right") {
+          cellData.align = horiz;
         }
 
         if (cellData.value || cellData.formula) {
