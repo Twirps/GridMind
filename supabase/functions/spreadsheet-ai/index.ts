@@ -147,7 +147,7 @@ ${context || "No data provided yet. Ask the user to describe their spreadsheet o
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
           ...messages,
