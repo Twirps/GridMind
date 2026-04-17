@@ -29,7 +29,7 @@ function extractCommands(content: string): any[] {
   return commands;
 }
 
-const FORMATTING_VERB_REGEX = /\b(wrap|wrapping|bold|italic|underline|color|colou?r|highlight|align|font\s*size|background|format|formatting|style|styling)\b/i;
+const FORMATTING_VERB_REGEX = /\b(wrap|wrapping|bold|italic|underline|color|colou?r|highlight|align|font\s*size|background|format|formatting|style|styling|delete|deleting|clear|clearing|remove|removing|erase|erasing|wipe|wiping)\b/i;
 
 function describesFormattingButNoBlock(content: string, commandCount: number): boolean {
   if (commandCount > 0) return false;
@@ -208,7 +208,7 @@ export function AIChatPane({ onClose, sheetContext, onExecute, selectedCellLabel
                         onClick={() => handleApply(cmd)}
                       >
                         <Play className="h-3 w-3" />
-                        Apply {cmd.action === "SET_CELLS" ? `${cmd.data?.length || 0} cell changes` : cmd.action}
+                        Apply {cmd.action === "SET_CELLS" ? `${cmd.data?.length || 0} cell changes` : cmd.action === "DELETE_CELLS" ? `${cmd.data?.length || 0} cell deletion${(cmd.data?.length || 0) === 1 ? "" : "s"}` : cmd.action}
                       </Button>
                     ))}
                   </div>

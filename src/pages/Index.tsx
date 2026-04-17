@@ -150,6 +150,12 @@ export default function Index() {
             const hasStyle = styleKeys.some((k) => item[k] !== undefined) || wrapModeIncoming !== undefined;
             const hasValue = item.value !== undefined || item.formula !== undefined;
 
+            // Treat empty-string value with no styling as a deletion (legacy AI clear pattern)
+            if (item.value === "" && item.formula === undefined && !hasStyle) {
+              delete newCells[key];
+              return;
+            }
+
             // Empty-cell guard: skip blank cells that receive no value (avoids ghost cells)
             if (!prev && !hasValue && !hasStyle) return;
             if (!prev && !hasValue) {
@@ -177,6 +183,27 @@ export default function Index() {
 
             next.metadata = { aiGenerated: true, logic: item.logic || "Pattern recognized by GridMind" };
             newCells[key] = next;
+          });
+          break;
+        case "DELETE_CELLS":
+          (command.data || []).forEach((item: any) => {
+            if (item.entireRow && typeof item.row === "number") {
+              const prefix = `${item.row},`;
+              Object.keys(newCells).forEach((k) => {
+                if (k.startsWith(prefix)) delete newCells[k];
+              });
+              return;
+            }
+            if (item.entireCol && typeof item.col === "number") {
+              const suffix = `,${item.col}`;
+              Object.keys(newCells).forEach((k) => {
+                if (k.endsWith(suffix)) delete newCells[k];
+              });
+              return;
+            }
+            if (typeof item.row === "number" && typeof item.col === "number") {
+              delete newCells[cellKey(item.row, item.col)];
+            }
           });
           break;
         case "DELETE_BOTTOM_PERCENT": {

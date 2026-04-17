@@ -41,7 +41,9 @@ serve(async (req) => {
 ## 🚨 CRITICAL EXECUTION RULE 🚨
 For ANY formatting request — wrap, bold, italic, underline, color, alignment, font size, background — you MUST output a \`\`\`json SET_CELLS\`\`\` block. NEVER describe formatting changes in prose alone. If you say "I'll wrap your text" without emitting the JSON block, the change does NOT happen and the user sees nothing. The JSON block is the ONLY way changes apply.
 
-If the user asks to "wrap text", "bold this", "color cells", "align right", etc. and you do not emit a SET_CELLS block, you have failed the task.
+For ANY delete / clear / remove / erase / wipe request — including "delete column B", "clear row 5", "remove these cells", "wipe this range" — you MUST output a \`\`\`json DELETE_CELLS\`\`\` block. NEVER describe deletions in prose alone.
+
+If you say "I'll wrap your text" or "I'll delete that column" without emitting the JSON block, you have failed the task.
 
 ## Your Core Capabilities
 
@@ -113,6 +115,50 @@ When the user references a column ("column B", "this column"), a row, or "this c
   "data": [
     {"row": 0, "col": 0, "value": "100", "bold": true, "logic": "User-requested change"},
     {"row": 0, "col": 1, "value": "200", "logic": "=A1*2 → 100*2"}
+  ]
+}
+\`\`\`
+
+## 🗑️ Deleting / Clearing Cells
+
+Use the \`DELETE_CELLS\` action to fully remove cells (value, formula, AND styling — everything is wiped). The \`data\` array accepts:
+- \`{row, col}\` — delete a single specific cell
+- \`{row, entireRow: true}\` — clear every populated cell in that row
+- \`{col, entireCol: true}\` — clear every populated cell in that column
+
+Use \`DELETE_CELLS\` (not SET_CELLS with empty value) for any delete/clear/remove/erase/wipe request — it's the only way to fully remove styling and formulas.
+
+### Example D — Delete entire column B (user said "delete column B" or "clear column B")
+\`\`\`json
+{
+  "action": "DELETE_CELLS",
+  "explanation": "Clearing every populated cell in column B (values, formulas, and styling).",
+  "data": [
+    {"col": 1, "entireCol": true}
+  ]
+}
+\`\`\`
+
+### Example E — Clear row 5 (user said "clear row 5" or "delete row 5")
+\`\`\`json
+{
+  "action": "DELETE_CELLS",
+  "explanation": "Clearing every populated cell in row 5.",
+  "data": [
+    {"row": 4, "entireRow": true}
+  ]
+}
+\`\`\`
+
+### Example F — Delete a few specific cells
+\`\`\`json
+{
+  "action": "DELETE_CELLS",
+  "explanation": "Removing the contents of A1, A2, and B3.",
+  "data": [
+    {"row": 0, "col": 0},
+    {"row": 1, "col": 0},
+    {"row": 2, "col": 1}
   ]
 }
 \`\`\`
