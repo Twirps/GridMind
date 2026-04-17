@@ -1,40 +1,33 @@
 
 
-## Plan: Make AI deletion of rows/columns/cells actually work
+## Plan: Persist AI chat across open/close + make pane resizable
 
-### Root cause
-The AI has no way to delete data. The system prompt only documents `SET_CELLS`, and the frontend handler only knows `SET_CELLS`, `DELETE_BOTTOM_PERCENT`, and `INSIGHT_DISCOVERY`. When you say "delete column B" or "clear row 5":
-- The AI either emits prose with no JSON (silent failure), or
-- Emits `SET_CELLS` with `value: ""`, which the handler stores as an empty-string cell (still present, still styled) instead of removing it. Visually this can leave residue (background colors, formulas not cleared) and doesn't actually shrink the data.
+### Problem
+- `AIChatPane` holds `messages` in local `useState`, so unmounting (closing the pane) wipes history.
+- Pane width is hardcoded `380px` inline — not resizable.
 
-There's also no way to remove an entire row/column structure — only cell contents.
+### Investigation needed
+Confirm where `AIChatPane` is mounted/unmounted and how Index.tsx toggles it.
 
-### Fix
+### Fixes
 
-**A. New AI action `DELETE_CELLS` (`supabase/functions/spreadsheet-ai/index.ts`)**
-- Add to the schema and a new section "## 🗑️ Deleting / Clearing":
-  - `DELETE_CELLS` → array of `{row, col}` to fully remove (value, formula, styling — all gone).
-  - Add an `entireRow: true` / `entireCol: true` shorthand: `{row: 4, entireRow: true}` clears the whole row across all populated columns; `{col: 1, entireCol: true}` clears the whole column.
-- Update the critical execution rule to also cover deletion verbs: *"For ANY delete/clear/remove/erase/wipe request, you MUST output a `DELETE_CELLS` JSON block."*
-- Add an example: user says "delete column B" → `{"action":"DELETE_CELLS","explanation":"Clearing all of column B.","data":[{"col":1,"entireCol":true}]}`.
-- Add an example: "clear row 5" → `{"col":..., "entireRow": true, "row": 4}`.
+**A. Lift chat state to `Index.tsx` (persists across open/close, cleared on route leave)**
+- Move `messages` and `input` state from `AIChatPane` into `Index.tsx` (which only mounts on `/editor`).
+- Pass them down as props: `messages`, `setMessages`, `input`, `setInput`.
+- When the user navigates away from `/editor`, `Index` unmounts and state naturally clears — matches requested behavior.
+- Keep all send/streaming logic inside `AIChatPane` but operate on the lifted state setters.
 
-**B. Handler for `DELETE_CELLS` (`src/pages/Index.tsx`)**
-- Add a new `case "DELETE_CELLS"` in `handleAIExecute`:
-  - For each `{row, col}` entry, `delete newCells[cellKey(row, col)]`.
-  - If `entireRow`, find every key in `sheet.cells` matching that row prefix and delete each.
-  - If `entireCol`, find every key matching that col suffix and delete each.
-- Also fix the existing `SET_CELLS` path: when `item.value === ""` and no styling is provided, treat it as a delete (`delete newCells[key]`) instead of leaving an empty-string cell. This makes legacy AI responses work too.
-
-**C. Apply-button label (`src/components/AIChatPane.tsx`)**
-- Update the button label so `DELETE_CELLS` reads as e.g. *"Apply 12 cell deletions"* instead of falling through to the generic action name.
-- Extend the `FORMATTING_VERB_REGEX` warning to also fire on delete/clear/remove verbs when no JSON block is emitted, so silent failures surface.
+**B. Make pane horizontally resizable**
+- Replace hardcoded `style={{ width: 380 }}` with controlled width state lifted to `Index.tsx` (so width also persists across toggles within the editor session).
+- Add a drag handle (`<div>` with `cursor-col-resize`) on the **left edge** of the pane.
+- On `mousedown`, attach `mousemove` listener that updates width = `window.innerWidth - e.clientX`, clamped between `320px` and `800px`. Release on `mouseup`.
+- Use a small custom hook inline (no new dependency) — `react-resizable-panels` is overkill since the pane is a fixed sibling, not part of a panel group.
 
 ### Files changed
-- `supabase/functions/spreadsheet-ai/index.ts` — add `DELETE_CELLS` schema, rule, examples
-- `src/pages/Index.tsx` — `DELETE_CELLS` handler + empty-value treated as delete in `SET_CELLS`
-- `src/components/AIChatPane.tsx` — button label + delete-verb warning
+- `src/pages/Index.tsx` — lift `aiMessages`, `aiInput`, `aiPaneWidth` state; pass down as props.
+- `src/components/AIChatPane.tsx` — accept new props instead of local state; add left-edge drag handle; use prop width.
 
 ### Out of scope
-- Structurally removing rows/columns (shifting remaining data up/left). This stays as "clear contents" because shifting requires reindexing all formulas — much larger change. Can be a follow-up.
+- Persisting chat to localStorage/Supabase across full page reloads (current request only asks for open/close persistence within the editor session).
+- Vertical resize / detachable window.
 
