@@ -1,38 +1,40 @@
 
 
-## Plan: Fix Imported Font Size + Click-to-Peek Overlay
+## Plan: Make AI Text Wrapping Reliably Work
 
-Scope reduced to two issues. Excel group import is dropped per request.
+### Root causes
+The previous "fix" wired `wrapMode` through the apply handler correctly, but the feature still appears broken because:
 
-### Issue 1 — Imported font size off by ~25%
-**Root cause:** Excel stores font size in points (`<sz val="11"/>`); we render it as `${fontSize}px`. 11pt ≈ 14.67px, so imported text appears smaller than the source.
+1. **AI rarely emits the JSON block.** `google/gemini-3-flash-preview` often answers with prose ("I'll wrap your text…") and skips the ```json``` block entirely. Without the block, no Apply button appears and nothing changes — but the AI's narrative claims success.
+2. **No range-aware targeting.** When a user says "wrap column B", the AI either (a) lists only rows with values it can see in context, missing empty/long cells, or (b) targets empty cells, so even when applied there's no visible change.
+3. **No auto-apply / confirmation gap.** Even when the JSON is correct, the user may not click the Apply button and assume the AI did it automatically.
+4. **Wrapped text can still look unchanged** if the row height is the default 28px — wrapping happens but only the first line shows because the row stays short.
 
-**Fix in `src/components/spreadsheet/importUtils.ts`:**
-- Where the parsed `font.size` (or `sz`) value is assigned to `cellData.fontSize`, multiply by `1.333` and round:
-  ```ts
-  cellData.fontSize = Math.round(font.size * 1.333);
-  ```
-- Apply in both code paths that set fontSize (the SheetJS `cell.s.font.sz` path and the jszip XML `<sz val="...">` path).
+### Fixes
 
-### Issue 2 — Click-to-peek overlay for truncated cells
-**Goal:** When the selected cell's content doesn't fully fit (clipped, overflow blocked by a non-empty neighbor, or wrap mode but row too short), show a temporary read-only floating overlay with the full text. Vanishes on selection change or when the user starts editing.
+**A. Stronger AI instructions (`supabase/functions/spreadsheet-ai/index.ts`)**
+- Add a hard rule near the top: *"For ANY formatting request (wrap, bold, color, align, font size), you MUST output a SET_CELLS JSON block. Never describe formatting changes in prose alone."*
+- Tell the AI to infer ranges from context: when user says "column B" or "this column", emit cells for every row in the visible context for that column, plus the selected cell's row range.
+- Add a second example: wrap based on the selected cell ("wrap this cell" → SET_CELLS for just that cell).
+- Upgrade model from `google/gemini-3-flash-preview` to `google/gemini-2.5-flash` for more reliable instruction-following on structured output.
 
-**Fix in `src/components/spreadsheet/SpreadsheetGrid.tsx`:**
-- Add a ref to the cell content `<span>` for the selected cell.
-- In a `useLayoutEffect` keyed on `selectedCell` + cell value + width/height, measure `scrollWidth > clientWidth` or `scrollHeight > clientHeight` to detect truncation.
-- If truncated and not editing, render an absolutely positioned overlay anchored to the selected cell:
-  - `position: absolute`, anchored to cell's top-left
-  - `min-width: cellWidth`, `max-width: 400px`, `whitespace-pre-wrap`, `word-break: break-word`
-  - White background, 1px border matching grid, soft shadow, `z-40`
-  - `pointer-events: none` so it doesn't block clicks/drag-selection
-  - Inherits font styling (bold/italic/color/size/align) from the cell so it reads identically
-- Hide overlay when `editingCell` matches selected cell, or when selection moves.
+**B. Auto-grow row height when wrapping (`src/pages/Index.tsx`)**
+- In the `SET_CELLS` handler, after applying cells, for every cell that received `wrapMode: "wrap"`, ensure the corresponding row's `rowHeights[row]` is at least `60px` (≈3 lines) if not already taller. This guarantees the wrap is visually obvious.
+- Update via the same `updateActiveSheet` callback so undo still works.
+
+**C. Empty-cell guard (`src/pages/Index.tsx`)**
+- When AI sends a cell that has no existing value AND no `value` field in the command, skip creating the cell. Prevents "ghost" wraps on blank cells that produce no visible change and clutter saved data.
+- Exception: if the cell already exists (was non-empty), apply the style as normal.
+
+**D. Better Apply feedback (`src/components/AIChatPane.tsx`)**
+- When the assistant message contains formatting verbs ("wrap", "bold", "color") but `extractCommands` returns zero commands, append a small inline warning: *"⚠️ The AI described changes but didn't produce an Apply block. Try rephrasing: 'Wrap rows 1–10 of column B'."* This surfaces the silent-failure mode immediately.
 
 ### Files changed
-- `src/components/spreadsheet/importUtils.ts` — pt→px conversion (both font-size code paths)
-- `src/components/spreadsheet/SpreadsheetGrid.tsx` — peek overlay with overflow detection
+- `supabase/functions/spreadsheet-ai/index.ts` — stronger wrap rules, second example, model upgrade
+- `src/pages/Index.tsx` — auto-grow row heights for wrapped cells; skip empty ghost cells
+- `src/components/AIChatPane.tsx` — warning when formatting is described but no JSON block emitted
 
-### Out of scope (per your instruction)
-- Importing Excel row/column outline groups — skipped.
-- Borders, number formats, merged cells, theme color resolution — skipped.
+### Out of scope
+- Changing the AI provider / adding function-calling — staying with the existing JSON-in-markdown contract
+- Auto-applying without user confirmation — keeping the explicit Apply button for safety
 
