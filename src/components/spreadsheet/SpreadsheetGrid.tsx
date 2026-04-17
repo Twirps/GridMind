@@ -278,6 +278,7 @@ export function SpreadsheetGrid({
           />
         ) : canOverflow ? (
           <span
+            ref={isSelected ? selectedContentRef : undefined}
             className={contentClass + " absolute top-0 left-0 pointer-events-none"}
             style={{
               width: "max-content",
@@ -288,9 +289,32 @@ export function SpreadsheetGrid({
             {String(displayVal)}
           </span>
         ) : (
-          <span className={contentClass}>
+          <span
+            ref={isSelected ? selectedContentRef : undefined}
+            className={contentClass}
+          >
             {String(displayVal)}
           </span>
+        )}
+
+        {isSelected && !isEditing && peekTruncated && String(displayVal).length > 0 && (
+          <div
+            className="absolute top-0 left-0 pointer-events-none z-40 bg-background border border-border shadow-lg rounded-sm px-[3px] py-[1px]"
+            style={{
+              minWidth: w,
+              maxWidth: 400,
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+              fontWeight: cell?.bold ? "bold" : undefined,
+              fontStyle: cell?.italic ? "italic" : undefined,
+              textDecoration: cell?.underline ? "underline" : undefined,
+              textAlign: cell?.align ?? "left",
+              color: cell?.textColor ?? undefined,
+              fontSize: cell?.fontSize ? `${cell.fontSize}px` : undefined,
+            }}
+          >
+            {String(displayVal)}
+          </div>
         )}
       </div>
     );
