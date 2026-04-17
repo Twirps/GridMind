@@ -1,35 +1,38 @@
 
 
-## Plan: Full Style Preservation on Excel Import
+## Plan: Fix Imported Font Size + Click-to-Peek Overlay
 
-### Goal
-Extend `importUtils.ts` to extract every visual property Excel cells carry — colors (text + background), font weight/style/decoration/size, alignment, and wrap mode — and map them onto our existing `CellData` fields (which the grid already renders correctly). Also import row heights, so wrapped/tall rows look identical to the source.
+Scope reduced to two issues. Excel group import is dropped per request.
 
-### Why this is small
-The grid (`SpreadsheetGrid.tsx`) already honors `bold`, `italic`, `underline`, `fontSize`, `align`, `bgColor`, `textColor`, and `wrapMode`. The only gap is that the importer isn't reading those fields out of the XLSX style object. No grid changes, no type changes.
+### Issue 1 — Imported font size off by ~25%
+**Root cause:** Excel stores font size in points (`<sz val="11"/>`); we render it as `${fontSize}px`. 11pt ≈ 14.67px, so imported text appears smaller than the source.
 
-### Changes
+**Fix in `src/components/spreadsheet/importUtils.ts`:**
+- Where the parsed `font.size` (or `sz`) value is assigned to `cellData.fontSize`, multiply by `1.333` and round:
+  ```ts
+  cellData.fontSize = Math.round(font.size * 1.333);
+  ```
+- Apply in both code paths that set fontSize (the SheetJS `cell.s.font.sz` path and the jszip XML `<sz val="...">` path).
 
-**`src/components/spreadsheet/importUtils.ts`** — single file edit
-1. Read `cell.s.font`:
-   - `font.bold` → `cellData.bold`
-   - `font.italic` → `cellData.italic`
-   - `font.underline` → `cellData.underline`
-   - `font.sz` → `cellData.fontSize` (number)
-   - `font.color.rgb` (or `.theme` fallback) → `cellData.textColor` as `#RRGGBB` (strip leading alpha if 8-char ARGB)
-2. Read `cell.s.fill`:
-   - `fill.fgColor.rgb` (when `patternType === "solid"`) → `cellData.bgColor` as `#RRGGBB`
-3. Keep existing alignment + wrapText logic.
-4. Always store the cell if it has any style, even when `value`/`formula` are empty (so a yellow-highlighted blank cell still shows). Update the gating condition accordingly.
-5. Add a small helper `argbToHex(s)` that normalizes 6- or 8-char ARGB strings to `#RRGGBB`, returns `undefined` for invalid input.
-6. Read `ws["!rows"]`:
-   - For each row with `.hpx`, set `rowHeights[r] = hpx`.
+### Issue 2 — Click-to-peek overlay for truncated cells
+**Goal:** When the selected cell's content doesn't fully fit (clipped, overflow blocked by a non-empty neighbor, or wrap mode but row too short), show a temporary read-only floating overlay with the full text. Vanishes on selection change or when the user starts editing.
 
-### Out of scope (explicit)
-- Theme colors / indexed palette resolution beyond what SheetJS surfaces directly (community SheetJS exposes `rgb` for most files; theme-only colors are rare and would require a palette lookup table — can be a follow-up if needed).
-- Borders, number formats, merged cells (separate features).
-- Per-run rich text styling within a single cell (we apply one style per cell).
+**Fix in `src/components/spreadsheet/SpreadsheetGrid.tsx`:**
+- Add a ref to the cell content `<span>` for the selected cell.
+- In a `useLayoutEffect` keyed on `selectedCell` + cell value + width/height, measure `scrollWidth > clientWidth` or `scrollHeight > clientHeight` to detect truncation.
+- If truncated and not editing, render an absolutely positioned overlay anchored to the selected cell:
+  - `position: absolute`, anchored to cell's top-left
+  - `min-width: cellWidth`, `max-width: 400px`, `whitespace-pre-wrap`, `word-break: break-word`
+  - White background, 1px border matching grid, soft shadow, `z-40`
+  - `pointer-events: none` so it doesn't block clicks/drag-selection
+  - Inherits font styling (bold/italic/color/size/align) from the cell so it reads identically
+- Hide overlay when `editingCell` matches selected cell, or when selection moves.
 
-### File changed
-- `src/components/spreadsheet/importUtils.ts`
+### Files changed
+- `src/components/spreadsheet/importUtils.ts` — pt→px conversion (both font-size code paths)
+- `src/components/spreadsheet/SpreadsheetGrid.tsx` — peek overlay with overflow detection
+
+### Out of scope (per your instruction)
+- Importing Excel row/column outline groups — skipped.
+- Borders, number formats, merged cells, theme color resolution — skipped.
 
