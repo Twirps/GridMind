@@ -43,6 +43,9 @@ export default function Index() {
   const [history, setHistory] = useState<SheetData[][]>([]);
   const [future, setFuture] = useState<SheetData[][]>([]);
   const [aiOpen, setAiOpen] = useState(false);
+  const [aiMessages, setAiMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([]);
+  const [aiInput, setAiInput] = useState("");
+  const [aiPaneWidth, setAiPaneWidth] = useState(380);
   const [saving, setSaving] = useState(false);
   const [docName, setDocName] = useState("Untitled Spreadsheet");
 
