@@ -59,17 +59,23 @@ function parseStylesXml(xml: string): ParsedStyles {
     }
   }
 
-  // Extract <cellXfs>...</cellXfs>
+  // Extract <cellXfs>...</cellXfs> — walk char-by-char to safely
+  // capture both self-closing <xf .../> and open <xf ...>...</xf> forms.
   const xfsBlock = xml.match(/<cellXfs[^>]*>([\s\S]*?)<\/cellXfs>/);
   if (xfsBlock) {
-    const xfMatches = xfsBlock[1].match(/<xf[^>]*(?:\/>|>[\s\S]*?<\/xf>)/g) || [];
-    for (const xfStr of xfMatches) {
+    const block = xfsBlock[1];
+    const xfRe = /<xf\b([^>]*?)(\/>|>([\s\S]*?)<\/xf>)/g;
+    let xm: RegExpExecArray | null;
+    while ((xm = xfRe.exec(block)) !== null) {
+      const attrs = xm[1];
+      const inner = xm[3] || "";
       const xf: ParsedXf = {};
-      const fontId = xfStr.match(/fontId="(\d+)"/);
+      const fontId = attrs.match(/fontId="(\d+)"/);
       if (fontId) xf.fontId = parseInt(fontId[1], 10);
-      if (/applyFont="1"/.test(xfStr)) xf.applyFont = true;
-      if (/applyAlignment="1"/.test(xfStr)) xf.applyAlignment = true;
-      const align = xfStr.match(/<alignment([^/]*?)\/>/);
+      if (/applyFont="1"/.test(attrs)) xf.applyFont = true;
+      if (/applyAlignment="1"/.test(attrs)) xf.applyAlignment = true;
+      // Alignment may live inside the <xf>...</xf> body
+      const align = inner.match(/<alignment\b([^/]*?)\/>/);
       if (align) {
         if (/wrapText="1"/.test(align[1])) xf.wrapText = true;
         const h = align[1].match(/horizontal="(left|center|right)"/);
