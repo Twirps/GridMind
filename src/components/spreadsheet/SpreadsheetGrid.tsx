@@ -304,12 +304,12 @@ export function SpreadsheetGrid({
 
         {/* Rows */}
         {Array.from({ length: NUM_ROWS }, (_, r) => (
-          <div key={r} className="flex">
+          <div key={r} className="flex items-stretch">
             <div
               className="flex-shrink-0 border-b border-r border-grid bg-grid-header flex items-center justify-center text-[11px] font-medium text-muted-foreground select-none sticky left-0 z-10 transition-colors relative"
               style={{
                 width: 50,
-                height: getRowHeight(r),
+                minHeight: getRowHeight(r),
                 backgroundColor: selectedCell?.row === r ? "hsl(var(--toolbar-active))" : undefined
               }}
             >
