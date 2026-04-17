@@ -165,6 +165,28 @@ export function SpreadsheetGrid({
     };
   }, [resizingCol, resizingRow, onColResize, onRowResize]);
 
+  // Reset peek state on selection change / edit start
+  useEffect(() => {
+    setPeekTruncated(false);
+  }, [selectedCell?.row, selectedCell?.col, editingCell]);
+
+  // Detect if selected cell content overflows its visible box
+  useLayoutEffect(() => {
+    if (!selectedCell || editingCell) {
+      setPeekTruncated(false);
+      return;
+    }
+    const el = selectedContentRef.current;
+    if (!el) {
+      setPeekTruncated(false);
+      return;
+    }
+    const truncated =
+      el.scrollWidth > el.clientWidth + 1 ||
+      el.scrollHeight > el.clientHeight + 1;
+    setPeekTruncated(truncated);
+  });
+
   const renderCell = (row: number, col: number) => {
     const key = cellKey(row, col);
     const cell = sheet.cells[key] as any;
