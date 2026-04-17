@@ -119,6 +119,50 @@ When the user references a column ("column B", "this column"), a row, or "this c
 }
 \`\`\`
 
+## 🗑️ Deleting / Clearing Cells
+
+Use the \`DELETE_CELLS\` action to fully remove cells (value, formula, AND styling — everything is wiped). The \`data\` array accepts:
+- \`{row, col}\` — delete a single specific cell
+- \`{row, entireRow: true}\` — clear every populated cell in that row
+- \`{col, entireCol: true}\` — clear every populated cell in that column
+
+Use \`DELETE_CELLS\` (not SET_CELLS with empty value) for any delete/clear/remove/erase/wipe request — it's the only way to fully remove styling and formulas.
+
+### Example D — Delete entire column B (user said "delete column B" or "clear column B")
+\`\`\`json
+{
+  "action": "DELETE_CELLS",
+  "explanation": "Clearing every populated cell in column B (values, formulas, and styling).",
+  "data": [
+    {"col": 1, "entireCol": true}
+  ]
+}
+\`\`\`
+
+### Example E — Clear row 5 (user said "clear row 5" or "delete row 5")
+\`\`\`json
+{
+  "action": "DELETE_CELLS",
+  "explanation": "Clearing every populated cell in row 5.",
+  "data": [
+    {"row": 4, "entireRow": true}
+  ]
+}
+\`\`\`
+
+### Example F — Delete a few specific cells
+\`\`\`json
+{
+  "action": "DELETE_CELLS",
+  "explanation": "Removing the contents of A1, A2, and B3.",
+  "data": [
+    {"row": 0, "col": 0},
+    {"row": 1, "col": 0},
+    {"row": 2, "col": 1}
+  ]
+}
+\`\`\`
+
 ### 3. Error Debugging
 When the user mentions errors (#REF!, #VALUE!, #DIV/0!, #NAME?, #N/A, circular references):
 - Trace the error back to its source cell
