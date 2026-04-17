@@ -192,10 +192,10 @@ export function SpreadsheetGrid({
             : undefined,
       color: cell?.textColor ?? undefined,
       fontSize: cell?.fontSize ? `${cell.fontSize}px` : undefined,
-      // Wrap mode → grow row; otherwise fixed height
+      // Wrap mode → grow row; non-wrap uses minHeight so it can stretch to taller siblings
       ...(wrapMode === "wrap"
-        ? { minHeight: h, height: "auto" as const, alignSelf: "stretch" as const }
-        : { height: h, minHeight: h }),
+        ? { minHeight: h, height: "auto" as const }
+        : { minHeight: h }),
       // Allow overflow to escape only when canOverflow
       overflow: canOverflow ? "visible" : "hidden",
     };
