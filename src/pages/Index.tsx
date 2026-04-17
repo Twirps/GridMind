@@ -372,6 +372,11 @@ export default function Index() {
         onRedo={() => {}}
         canUndo={history.length > 0}
         canRedo={false}
+        onGroupRows={handleGroupRows}
+        onGroupCols={handleGroupCols}
+        onUngroupRows={handleUngroupRows}
+        onUngroupCols={handleUngroupCols}
+        hasRangeSelection={!!selectionRange}
       />
 
       <FormulaBar
