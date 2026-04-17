@@ -48,6 +48,10 @@ export function SpreadsheetGrid({
   const resizeStart = useRef(0);
   const resizeOriginal = useRef(0);
 
+  // Peek overlay: detect when selected cell content is truncated
+  const selectedContentRef = useRef<HTMLSpanElement>(null);
+  const [peekTruncated, setPeekTruncated] = useState(false);
+
   const getColWidth = (c: number) => sheet.colWidths[c] ?? DEFAULT_COL_WIDTH;
   const getRowHeight = (r: number) => sheet.rowHeights[r] ?? DEFAULT_ROW_HEIGHT;
 
