@@ -43,6 +43,9 @@ export default function Index() {
   const [history, setHistory] = useState<SheetData[][]>([]);
   const [future, setFuture] = useState<SheetData[][]>([]);
   const [aiOpen, setAiOpen] = useState(false);
+  const [aiMessages, setAiMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([]);
+  const [aiInput, setAiInput] = useState("");
+  const [aiPaneWidth, setAiPaneWidth] = useState(380);
   const [saving, setSaving] = useState(false);
   const [docName, setDocName] = useState("Untitled Spreadsheet");
 
@@ -472,12 +475,18 @@ export default function Index() {
         />
 
         {aiOpen && (
-          <div className="w-[380px] border-l border-border bg-card z-10">
+          <div style={{ width: aiPaneWidth }} className="border-l border-border bg-card z-10 flex-shrink-0">
             <AIChatPane
               onClose={() => setAiOpen(false)}
               sheetContext={getSheetContext()}
               onExecute={handleAIExecute}
               selectedCellLabel={selectedCellLabel}
+              messages={aiMessages}
+              setMessages={setAiMessages}
+              input={aiInput}
+              setInput={setAiInput}
+              width={aiPaneWidth}
+              setWidth={setAiPaneWidth}
             />
           </div>
         )}

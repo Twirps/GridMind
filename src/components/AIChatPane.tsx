@@ -14,6 +14,12 @@ interface AIChatPaneProps {
   sheetContext?: string;
   onExecute?: (command: any) => void;
   selectedCellLabel?: string;
+  messages: Message[];
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
+  input: string;
+  setInput: React.Dispatch<React.SetStateAction<string>>;
+  width: number;
+  setWidth: React.Dispatch<React.SetStateAction<number>>;
 }
 
 function extractCommands(content: string): any[] {
@@ -55,18 +61,43 @@ const WELCOME_MESSAGE = `👋 I'm **GridMind**, your spreadsheet expert. Here's 
 
 Use the quick actions below or just ask me anything about your spreadsheet!`;
 
-export function AIChatPane({ onClose, sheetContext, onExecute, selectedCellLabel }: AIChatPaneProps) {
-  const [messages, setMessages] = useState<Message[]>([
-    { role: "assistant", content: WELCOME_MESSAGE }
-  ]);
-  const [input, setInput] = useState("");
+export function AIChatPane({ onClose, sheetContext, onExecute, selectedCellLabel, messages, setMessages, input, setInput, width, setWidth }: AIChatPaneProps) {
   const [isLoading, setIsLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  // Seed welcome message on first mount if empty
+  useEffect(() => {
+    if (messages.length === 0) {
+      setMessages([{ role: "assistant", content: WELCOME_MESSAGE }]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  const handleResizeMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = width;
+    const onMove = (ev: MouseEvent) => {
+      const delta = startX - ev.clientX;
+      const next = Math.min(800, Math.max(320, startWidth + delta));
+      setWidth(next);
+    };
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  };
 
   const send = async (overrideText?: string) => {
     const text = (overrideText ?? input).trim();
@@ -159,7 +190,13 @@ export function AIChatPane({ onClose, sheetContext, onExecute, selectedCellLabel
   const showQuickActions = messages.length <= 1 && !isLoading;
 
   return (
-    <div className="flex flex-col h-full bg-card" style={{ width: 380 }}>
+    <div className="relative flex flex-col h-full bg-card w-full">
+      {/* Resize handle (left edge) */}
+      <div
+        onMouseDown={handleResizeMouseDown}
+        className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/40 transition-colors z-20"
+        title="Drag to resize"
+      />
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
         <div className="flex items-center gap-2">
