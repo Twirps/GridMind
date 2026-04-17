@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useEffect } from "react";
+import { useRef, useState, useCallback, useEffect, useLayoutEffect } from "react";
 import { Sparkles } from "lucide-react";
 import {
   SheetData, CellData, CellAddress, cellKey, colLabel,
