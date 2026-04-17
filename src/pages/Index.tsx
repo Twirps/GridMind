@@ -134,23 +134,47 @@ export default function Index() {
   const handleAIExecute = useCallback((command: any) => {
     updateActiveSheet((sheet) => {
       const newCells = { ...sheet.cells };
+      const newRowHeights = { ...sheet.rowHeights };
+      let rowHeightsChanged = false;
       switch (command.action) {
         case "SET_CELLS":
           command.data.forEach((item: any) => {
             const key = cellKey(item.row, item.col);
-            const prev = newCells[key] ?? { value: "" };
-            const next: any = { ...prev };
-            // Value / formula — only overwrite if explicitly provided
+            const prev = newCells[key];
+            // Normalize wrap shorthand first so the empty-cell guard sees it
+            let wrapModeIncoming = item.wrapMode;
+            if (item.wrap === true) wrapModeIncoming = "wrap";
+            else if (item.wrap === false) wrapModeIncoming = "overflow";
+
+            const styleKeys = ["bold", "italic", "underline", "align", "bgColor", "textColor", "fontSize"] as const;
+            const hasStyle = styleKeys.some((k) => item[k] !== undefined) || wrapModeIncoming !== undefined;
+            const hasValue = item.value !== undefined || item.formula !== undefined;
+
+            // Empty-cell guard: skip blank cells that receive no value (avoids ghost cells)
+            if (!prev && !hasValue && !hasStyle) return;
+            if (!prev && !hasValue) {
+              // Style-only on empty cell — only proceed if it's a wrap (visible width-driven change is moot, but allow it)
+              // Actually, skip: applying bold/color to a blank cell produces no visible change.
+              if (wrapModeIncoming !== "wrap") return;
+            }
+
+            const next: any = { ...(prev ?? { value: "" }) };
             if (item.value !== undefined) next.value = item.value;
             if (item.formula !== undefined) next.formula = item.formula;
-            // Style passthrough — only set keys the AI actually included
-            const styleKeys = ["bold", "italic", "underline", "align", "bgColor", "textColor", "fontSize", "wrapMode"] as const;
             for (const k of styleKeys) {
               if (item[k] !== undefined) next[k] = item[k];
             }
-            // Backwards-compat: accept `wrap: true|false` as shorthand
-            if (item.wrap === true) next.wrapMode = "wrap";
-            else if (item.wrap === false && next.wrapMode === "wrap") next.wrapMode = "overflow";
+            if (wrapModeIncoming !== undefined) next.wrapMode = wrapModeIncoming;
+
+            // Auto-grow row height when wrapping is enabled, so the wrap is visible
+            if (next.wrapMode === "wrap") {
+              const currentH = newRowHeights[item.row] ?? 28;
+              if (currentH < 60) {
+                newRowHeights[item.row] = 60;
+                rowHeightsChanged = true;
+              }
+            }
+
             next.metadata = { aiGenerated: true, logic: item.logic || "Pattern recognized by GridMind" };
             newCells[key] = next;
           });
@@ -182,7 +206,7 @@ export default function Index() {
           });
           break;
       }
-      return { ...sheet, cells: newCells };
+      return { ...sheet, cells: newCells, rowHeights: rowHeightsChanged ? newRowHeights : sheet.rowHeights };
     });
   }, [updateActiveSheet, toast]);
 

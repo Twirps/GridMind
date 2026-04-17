@@ -29,6 +29,16 @@ function extractCommands(content: string): any[] {
   return commands;
 }
 
+const FORMATTING_VERB_REGEX = /\b(wrap|wrapping|bold|italic|underline|color|colou?r|highlight|align|font\s*size|background|format|formatting|style|styling)\b/i;
+
+function describesFormattingButNoBlock(content: string, commandCount: number): boolean {
+  if (commandCount > 0) return false;
+  if (!content || content.length < 20) return false;
+  // Skip the welcome message and any apology / refusal
+  if (content.includes("👋") || content.startsWith("⚠️") || content.startsWith("✅")) return false;
+  return FORMATTING_VERB_REGEX.test(content);
+}
+
 const QUICK_ACTIONS = [
   { label: "Explain this cell", icon: HelpCircle, prompt: (cell?: string) => cell ? `Explain cell ${cell} — what formula or value is in it and how it was calculated?` : "Explain the currently selected cell." },
   { label: "Find errors", icon: AlertTriangle, prompt: () => "Scan my spreadsheet for any errors (#REF!, #VALUE!, #DIV/0!, #NAME?, circular references) and explain how to fix them." },
@@ -201,6 +211,12 @@ export function AIChatPane({ onClose, sheetContext, onExecute, selectedCellLabel
                         Apply {cmd.action === "SET_CELLS" ? `${cmd.data?.length || 0} cell changes` : cmd.action}
                       </Button>
                     ))}
+                  </div>
+                )}
+                {msg.role === "assistant" && describesFormattingButNoBlock(msg.content, commands.length) && !isLoading && (
+                  <div className="flex items-start gap-1.5 rounded-md border border-destructive/40 bg-destructive/10 px-2 py-1.5 text-[10px] leading-snug text-destructive">
+                    <AlertTriangle className="h-3 w-3 flex-shrink-0 mt-0.5" />
+                    <span>The AI described changes but didn't produce an Apply block. Try rephrasing — e.g. <em>"Wrap rows 1–10 of column B"</em>.</span>
                   </div>
                 )}
               </div>
