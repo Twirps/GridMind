@@ -1,5 +1,4 @@
 import { useRef, useState, useCallback, useEffect, useLayoutEffect } from "react";
-import { Sparkles } from "lucide-react";
 import {
   SheetData, CellData, CellAddress, cellKey, colLabel,
   DEFAULT_COL_WIDTH, DEFAULT_ROW_HEIGHT, NUM_ROWS, NUM_COLS,
@@ -194,9 +193,6 @@ export function SpreadsheetGrid({
     const isInRange = isCellInRange(row, col, selectionRange);
     const isEditing = editingCell?.row === row && editingCell?.col === col;
 
-    const isAiGenerated = cell?.metadata?.aiGenerated;
-    const aiLogic = cell?.metadata?.logic;
-
     const displayVal = cell?.computed !== undefined ? cell.computed : (cell?.value ?? "");
     const w = getColWidth(col);
     const h = getRowHeight(row);
@@ -218,11 +214,9 @@ export function SpreadsheetGrid({
       textAlign: cell?.align ?? "left",
       backgroundColor: cell?.bgColor
         ? cell.bgColor
-        : isAiGenerated
-          ? "rgba(59, 130, 246, 0.05)"
-          : isInRange && !isSelected
-            ? "hsl(var(--cell-selected))"
-            : undefined,
+        : isInRange && !isSelected
+          ? "hsl(var(--cell-selected))"
+          : undefined,
       color: cell?.textColor ?? undefined,
       fontSize: cell?.fontSize ? `${cell.fontSize}px` : undefined,
       ...(wrapMode === "wrap"
@@ -245,24 +239,12 @@ export function SpreadsheetGrid({
         key={key}
         className={`sheet-cell flex-shrink-0 relative cursor-cell group ${
           isSelected ? "sheet-cell-selected z-10" : ""
-        } ${isAiGenerated ? "border-blue-100" : ""}`}
+        }`}
         style={style}
         onMouseDown={(e) => handleCellMouseDown(row, col, e)}
         onMouseEnter={() => handleCellMouseEnter(row, col)}
         onDoubleClick={() => startEdit({ row, col })}
       >
-        {isAiGenerated && !isEditing && (
-          <div className="absolute top-0 right-0 p-0.5 z-20">
-            <Sparkles className="h-2 w-2 text-primary opacity-40 group-hover:opacity-100 transition-opacity" />
-            <div className="invisible group-hover:visible absolute left-full top-0 ml-2 z-50 w-48 p-2 bg-slate-900 text-white text-[10px] rounded shadow-xl pointer-events-none animate-in fade-in zoom-in-95">
-               <p className="font-bold border-b border-white/20 mb-1 pb-1 flex items-center gap-1">
-                 <Sparkles className="h-2 w-2" /> AI Reasoning
-               </p>
-               {aiLogic || "Recognized pattern from context."}
-            </div>
-          </div>
-        )}
-
         {isEditing ? (
           <input
             ref={inputRef}
