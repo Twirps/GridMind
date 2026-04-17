@@ -1,24 +1,19 @@
 
 
-## Plan: Remove AI reasoning highlight on cells
+The user is asking for a written deliverable (an in-depth paragraph for an investor pitch), not a code change. This is a research + writing task — no plan needed for code.
 
-### What to remove
-In `src/components/SpreadsheetGrid.tsx`, cells flagged with `metadata.aiGenerated` currently get:
-1. A blue tint background (`rgba(59, 130, 246, 0.05)`)
-2. A `border-blue-100` class
-3. A `Sparkles` icon overlay in the top-right corner with a hover tooltip showing AI reasoning
+I'll explore the codebase to ground the writeup in actual implemented features (not aspirational README claims), then deliver the paragraph directly in chat.
 
-### Changes
-**`src/components/spreadsheet/SpreadsheetGrid.tsx`**
-- Remove the `isAiGenerated` and `aiLogic` variables in `renderCell`.
-- Remove the `Sparkles` icon overlay block and its hover tooltip.
-- Remove the AI-generated background tint from the inline `style.backgroundColor` fallback chain.
-- Remove the `border-blue-100` conditional class.
-- Drop the now-unused `Sparkles` import from `lucide-react`.
+Quick scope of what I need to verify:
+- Spreadsheet engine: formulas supported, multi-sheet, undo/redo, formatting, grouping, import/export
+- AI pane: streaming, JSON action contract (SET_CELLS, DELETE_CELLS, etc.), context awareness, resizable, persistent within session
+- Auth: Google OAuth via Lovable Cloud
+- Persistence: workbooks as JSONB in Supabase with RLS
+- Dashboard: blurred-for-guests homepage, /editor route
+- Tech stack: React 18, Vite, TS, Tailwind, shadcn, Supabase (Lovable Cloud), Lovable AI Gateway w/ Gemini, SheetJS, jsPDF
+- Edge function: spreadsheet-ai (auth-gated, streaming SSE)
 
-The underlying `metadata.aiGenerated` data on cells is left untouched (no migration), just no longer rendered.
+Since this is just a writeup request and the codebase context is already substantial, I'll proceed directly without a plan. Switching out of plan mode is required for me to actually write the response — but the response IS the writeup itself, no code/tools needed.
 
-### Out of scope
-- Removing `metadata` writes from AI handlers in `Index.tsx` / edge function (data-only, invisible now).
-- Any change to the AI chat pane itself.
+Output format: a single in-depth paragraph (per user request), structured but flowing, covering features + stack + investor-relevant technical details.
 
