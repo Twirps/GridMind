@@ -1,40 +1,40 @@
 
 
-## Plan: Make AI Text Wrapping Reliably Work
+## Plan: Make AI deletion of rows/columns/cells actually work
 
-### Root causes
-The previous "fix" wired `wrapMode` through the apply handler correctly, but the feature still appears broken because:
+### Root cause
+The AI has no way to delete data. The system prompt only documents `SET_CELLS`, and the frontend handler only knows `SET_CELLS`, `DELETE_BOTTOM_PERCENT`, and `INSIGHT_DISCOVERY`. When you say "delete column B" or "clear row 5":
+- The AI either emits prose with no JSON (silent failure), or
+- Emits `SET_CELLS` with `value: ""`, which the handler stores as an empty-string cell (still present, still styled) instead of removing it. Visually this can leave residue (background colors, formulas not cleared) and doesn't actually shrink the data.
 
-1. **AI rarely emits the JSON block.** `google/gemini-3-flash-preview` often answers with prose ("I'll wrap your text…") and skips the ```json``` block entirely. Without the block, no Apply button appears and nothing changes — but the AI's narrative claims success.
-2. **No range-aware targeting.** When a user says "wrap column B", the AI either (a) lists only rows with values it can see in context, missing empty/long cells, or (b) targets empty cells, so even when applied there's no visible change.
-3. **No auto-apply / confirmation gap.** Even when the JSON is correct, the user may not click the Apply button and assume the AI did it automatically.
-4. **Wrapped text can still look unchanged** if the row height is the default 28px — wrapping happens but only the first line shows because the row stays short.
+There's also no way to remove an entire row/column structure — only cell contents.
 
-### Fixes
+### Fix
 
-**A. Stronger AI instructions (`supabase/functions/spreadsheet-ai/index.ts`)**
-- Add a hard rule near the top: *"For ANY formatting request (wrap, bold, color, align, font size), you MUST output a SET_CELLS JSON block. Never describe formatting changes in prose alone."*
-- Tell the AI to infer ranges from context: when user says "column B" or "this column", emit cells for every row in the visible context for that column, plus the selected cell's row range.
-- Add a second example: wrap based on the selected cell ("wrap this cell" → SET_CELLS for just that cell).
-- Upgrade model from `google/gemini-3-flash-preview` to `google/gemini-2.5-flash` for more reliable instruction-following on structured output.
+**A. New AI action `DELETE_CELLS` (`supabase/functions/spreadsheet-ai/index.ts`)**
+- Add to the schema and a new section "## 🗑️ Deleting / Clearing":
+  - `DELETE_CELLS` → array of `{row, col}` to fully remove (value, formula, styling — all gone).
+  - Add an `entireRow: true` / `entireCol: true` shorthand: `{row: 4, entireRow: true}` clears the whole row across all populated columns; `{col: 1, entireCol: true}` clears the whole column.
+- Update the critical execution rule to also cover deletion verbs: *"For ANY delete/clear/remove/erase/wipe request, you MUST output a `DELETE_CELLS` JSON block."*
+- Add an example: user says "delete column B" → `{"action":"DELETE_CELLS","explanation":"Clearing all of column B.","data":[{"col":1,"entireCol":true}]}`.
+- Add an example: "clear row 5" → `{"col":..., "entireRow": true, "row": 4}`.
 
-**B. Auto-grow row height when wrapping (`src/pages/Index.tsx`)**
-- In the `SET_CELLS` handler, after applying cells, for every cell that received `wrapMode: "wrap"`, ensure the corresponding row's `rowHeights[row]` is at least `60px` (≈3 lines) if not already taller. This guarantees the wrap is visually obvious.
-- Update via the same `updateActiveSheet` callback so undo still works.
+**B. Handler for `DELETE_CELLS` (`src/pages/Index.tsx`)**
+- Add a new `case "DELETE_CELLS"` in `handleAIExecute`:
+  - For each `{row, col}` entry, `delete newCells[cellKey(row, col)]`.
+  - If `entireRow`, find every key in `sheet.cells` matching that row prefix and delete each.
+  - If `entireCol`, find every key matching that col suffix and delete each.
+- Also fix the existing `SET_CELLS` path: when `item.value === ""` and no styling is provided, treat it as a delete (`delete newCells[key]`) instead of leaving an empty-string cell. This makes legacy AI responses work too.
 
-**C. Empty-cell guard (`src/pages/Index.tsx`)**
-- When AI sends a cell that has no existing value AND no `value` field in the command, skip creating the cell. Prevents "ghost" wraps on blank cells that produce no visible change and clutter saved data.
-- Exception: if the cell already exists (was non-empty), apply the style as normal.
-
-**D. Better Apply feedback (`src/components/AIChatPane.tsx`)**
-- When the assistant message contains formatting verbs ("wrap", "bold", "color") but `extractCommands` returns zero commands, append a small inline warning: *"⚠️ The AI described changes but didn't produce an Apply block. Try rephrasing: 'Wrap rows 1–10 of column B'."* This surfaces the silent-failure mode immediately.
+**C. Apply-button label (`src/components/AIChatPane.tsx`)**
+- Update the button label so `DELETE_CELLS` reads as e.g. *"Apply 12 cell deletions"* instead of falling through to the generic action name.
+- Extend the `FORMATTING_VERB_REGEX` warning to also fire on delete/clear/remove verbs when no JSON block is emitted, so silent failures surface.
 
 ### Files changed
-- `supabase/functions/spreadsheet-ai/index.ts` — stronger wrap rules, second example, model upgrade
-- `src/pages/Index.tsx` — auto-grow row heights for wrapped cells; skip empty ghost cells
-- `src/components/AIChatPane.tsx` — warning when formatting is described but no JSON block emitted
+- `supabase/functions/spreadsheet-ai/index.ts` — add `DELETE_CELLS` schema, rule, examples
+- `src/pages/Index.tsx` — `DELETE_CELLS` handler + empty-value treated as delete in `SET_CELLS`
+- `src/components/AIChatPane.tsx` — button label + delete-verb warning
 
 ### Out of scope
-- Changing the AI provider / adding function-calling — staying with the existing JSON-in-markdown contract
-- Auto-applying without user confirmation — keeping the explicit Apply button for safety
+- Structurally removing rows/columns (shifting remaining data up/left). This stays as "clear contents" because shifting requires reindexing all formulas — much larger change. Can be a follow-up.
 
