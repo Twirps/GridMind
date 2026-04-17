@@ -18,6 +18,7 @@ import {
 import { computeSheet } from "@/components/spreadsheet/formulaEngine";
 import { downloadCSV, downloadExcel, downloadPDF } from "@/components/spreadsheet/downloadUtils";
 import { importFromFile } from "@/components/spreadsheet/importUtils";
+import { addGroup, removeGroupsInRange, toggleGroup } from "@/components/spreadsheet/groupingUtils";
 import { Sparkles, Download, Table, FileDown, Zap, Save, ArrowLeft, Upload } from "lucide-react";
 
 function createSheet(name: string, id: string): SheetData {
@@ -201,6 +202,43 @@ export default function Index() {
       return { ...sheet, cells: { ...sheet.cells, [key]: { ...existing, ...style } } };
     });
   }, [selectedCell, updateActiveSheet]);
+
+  // ----- Row/column outline grouping -----
+  const handleGroupRows = useCallback(() => {
+    if (!selectionRange) return;
+    const start = Math.min(selectionRange.start.row, selectionRange.end.row);
+    const end = Math.max(selectionRange.start.row, selectionRange.end.row);
+    updateActiveSheet((sheet) => ({ ...sheet, rowGroups: addGroup(sheet.rowGroups, start, end) }));
+  }, [selectionRange, updateActiveSheet]);
+
+  const handleGroupCols = useCallback(() => {
+    if (!selectionRange) return;
+    const start = Math.min(selectionRange.start.col, selectionRange.end.col);
+    const end = Math.max(selectionRange.start.col, selectionRange.end.col);
+    updateActiveSheet((sheet) => ({ ...sheet, colGroups: addGroup(sheet.colGroups, start, end) }));
+  }, [selectionRange, updateActiveSheet]);
+
+  const handleUngroupRows = useCallback(() => {
+    if (!selectionRange) return;
+    const start = Math.min(selectionRange.start.row, selectionRange.end.row);
+    const end = Math.max(selectionRange.start.row, selectionRange.end.row);
+    updateActiveSheet((sheet) => ({ ...sheet, rowGroups: removeGroupsInRange(sheet.rowGroups, start, end) }));
+  }, [selectionRange, updateActiveSheet]);
+
+  const handleUngroupCols = useCallback(() => {
+    if (!selectionRange) return;
+    const start = Math.min(selectionRange.start.col, selectionRange.end.col);
+    const end = Math.max(selectionRange.start.col, selectionRange.end.col);
+    updateActiveSheet((sheet) => ({ ...sheet, colGroups: removeGroupsInRange(sheet.colGroups, start, end) }));
+  }, [selectionRange, updateActiveSheet]);
+
+  const handleToggleRowGroup = useCallback((idx: number) => {
+    updateActiveSheet((sheet) => ({ ...sheet, rowGroups: toggleGroup(sheet.rowGroups, idx) }));
+  }, [updateActiveSheet]);
+
+  const handleToggleColGroup = useCallback((idx: number) => {
+    updateActiveSheet((sheet) => ({ ...sheet, colGroups: toggleGroup(sheet.colGroups, idx) }));
+  }, [updateActiveSheet]);
 
   const getSheetContext = () => {
     const lines: string[] = [];
