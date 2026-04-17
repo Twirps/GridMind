@@ -190,7 +190,13 @@ export function AIChatPane({ onClose, sheetContext, onExecute, selectedCellLabel
   const showQuickActions = messages.length <= 1 && !isLoading;
 
   return (
-    <div className="flex flex-col h-full bg-card" style={{ width: 380 }}>
+    <div className="relative flex flex-col h-full bg-card w-full">
+      {/* Resize handle (left edge) */}
+      <div
+        onMouseDown={handleResizeMouseDown}
+        className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/40 transition-colors z-20"
+        title="Drag to resize"
+      />
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
         <div className="flex items-center gap-2">
