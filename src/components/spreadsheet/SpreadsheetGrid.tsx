@@ -4,6 +4,7 @@ import {
   SheetData, CellData, CellAddress, cellKey, colLabel,
   DEFAULT_COL_WIDTH, DEFAULT_ROW_HEIGHT, NUM_ROWS, NUM_COLS,
 } from "./types";
+import { isHidden, getMaxLevel, toggleGroup } from "./groupingUtils";
 
 interface SpreadsheetGridProps {
   sheet: SheetData;
@@ -14,6 +15,8 @@ interface SpreadsheetGridProps {
   onSelectionChange: (range: { start: CellAddress; end: CellAddress }) => void;
   onColResize?: (col: number, width: number) => void;
   onRowResize?: (row: number, height: number) => void;
+  onToggleRowGroup?: (index: number) => void;
+  onToggleColGroup?: (index: number) => void;
 }
 
 function isCellInRange(row: number, col: number, range: { start: CellAddress; end: CellAddress } | null): boolean {
@@ -25,10 +28,13 @@ function isCellInRange(row: number, col: number, range: { start: CellAddress; en
   return row >= minR && row <= maxR && col >= minC && col <= maxC;
 }
 
+const GUTTER_UNIT = 16; // px per nesting level
+
 export function SpreadsheetGrid({
   sheet, selectedCell, selectionRange,
   onCellSelect, onCellChange, onSelectionChange,
   onColResize, onRowResize,
+  onToggleRowGroup, onToggleColGroup,
 }: SpreadsheetGridProps) {
   const [editingCell, setEditingCell] = useState<CellAddress | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -37,7 +43,6 @@ export function SpreadsheetGrid({
   const isDragging = useRef(false);
   const dragStart = useRef<CellAddress | null>(null);
 
-  // Resize state
   const [resizingCol, setResizingCol] = useState<number | null>(null);
   const [resizingRow, setResizingRow] = useState<number | null>(null);
   const resizeStart = useRef(0);
@@ -45,6 +50,13 @@ export function SpreadsheetGrid({
 
   const getColWidth = (c: number) => sheet.colWidths[c] ?? DEFAULT_COL_WIDTH;
   const getRowHeight = (r: number) => sheet.rowHeights[r] ?? DEFAULT_ROW_HEIGHT;
+
+  const rowGroups = sheet.rowGroups;
+  const colGroups = sheet.colGroups;
+  const rowGutterLevels = getMaxLevel(rowGroups) + 1; // 0 if no groups
+  const colGutterLevels = getMaxLevel(colGroups) + 1;
+  const rowGutterWidth = rowGutterLevels * GUTTER_UNIT;
+  const colGutterHeight = colGutterLevels * GUTTER_UNIT;
 
   const startEdit = useCallback((addr: CellAddress) => {
     const cell = sheet.cells[cellKey(addr.row, addr.col)];
@@ -109,9 +121,6 @@ export function SpreadsheetGrid({
     }
   };
 
-  const handleMouseUp = () => { isDragging.current = false; };
-
-  // Column resize handlers
   const handleColResizeStart = (col: number, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -120,7 +129,6 @@ export function SpreadsheetGrid({
     resizeOriginal.current = getColWidth(col);
   };
 
-  // Row resize handlers
   const handleRowResizeStart = (row: number, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -169,7 +177,6 @@ export function SpreadsheetGrid({
 
     const wrapMode: "overflow" | "wrap" | "clip" = cell?.wrapMode ?? "overflow";
 
-    // Overflow only spills if there's text AND right neighbor is empty
     const rightKey = cellKey(row, col + 1);
     const rightCell = sheet.cells[rightKey];
     const rightEmpty =
@@ -192,11 +199,9 @@ export function SpreadsheetGrid({
             : undefined,
       color: cell?.textColor ?? undefined,
       fontSize: cell?.fontSize ? `${cell.fontSize}px` : undefined,
-      // Wrap mode → grow row; non-wrap uses minHeight so it can stretch to taller siblings
       ...(wrapMode === "wrap"
         ? { minHeight: h, height: "auto" as const }
         : { minHeight: h }),
-      // Allow overflow to escape only when canOverflow
       overflow: canOverflow ? "visible" : "hidden",
     };
 
@@ -206,7 +211,6 @@ export function SpreadsheetGrid({
     } else if (wrapMode === "clip") {
       contentClass += "overflow-hidden whitespace-nowrap";
     } else {
-      // overflow
       contentClass += "whitespace-nowrap";
     }
 
@@ -247,7 +251,6 @@ export function SpreadsheetGrid({
             }}
           />
         ) : canOverflow ? (
-          // Overflow mode: absolutely-positioned span that can spill over empty neighbor
           <span
             className={contentClass + " absolute top-0 left-0 pointer-events-none"}
             style={{
@@ -269,6 +272,104 @@ export function SpreadsheetGrid({
 
   const isResizing = resizingCol !== null || resizingRow !== null;
 
+  // Pre-compute visible row/col indices honoring collapsed groups
+  const visibleRows: number[] = [];
+  for (let r = 0; r < NUM_ROWS; r++) {
+    if (!isHidden(r, rowGroups)) visibleRows.push(r);
+  }
+  const visibleCols: number[] = [];
+  for (let c = 0; c < NUM_COLS; c++) {
+    if (!isHidden(c, colGroups)) visibleCols.push(c);
+  }
+
+  // --- Gutter render helpers ---
+  const renderColGroupGutter = () => {
+    if (!colGroups || colGroups.length === 0) return null;
+    return (
+      <div className="flex" style={{ height: colGutterHeight }}>
+        {/* corner spacer for row gutter + row header */}
+        <div
+          className="flex-shrink-0 bg-grid-header border-b border-r border-grid sticky left-0 z-30"
+          style={{ width: rowGutterWidth + 50 }}
+        />
+        <div className="relative flex-shrink-0" style={{ height: colGutterHeight }}>
+          {/* Build a spacer matching total visible width */}
+          <div className="flex">
+            {visibleCols.map((c) => (
+              <div key={c} style={{ width: getColWidth(c) }} className="flex-shrink-0" />
+            ))}
+          </div>
+          {/* Brackets per group */}
+          {colGroups.map((g, i) => {
+            // Compute pixel left/right based on visible cols
+            let left = 0;
+            let width = 0;
+            for (const c of visibleCols) {
+              if (c < g.start) left += getColWidth(c);
+              else if (c >= g.start && c <= g.end) width += getColWidth(c);
+            }
+            const top = g.level * GUTTER_UNIT + 2;
+            return (
+              <div
+                key={i}
+                className="absolute pointer-events-none"
+                style={{ left, top, width, height: GUTTER_UNIT - 4 }}
+              >
+                {!g.collapsed && (
+                  <div className="absolute inset-x-0 top-1/2 h-px bg-muted-foreground/40" />
+                )}
+                <button
+                  onClick={() => onToggleColGroup?.(i)}
+                  className="pointer-events-auto absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-3.5 h-3.5 bg-background border border-muted-foreground/60 text-[10px] leading-none flex items-center justify-center rounded-sm hover:bg-muted z-10"
+                  title={g.collapsed ? "Expand" : "Collapse"}
+                >
+                  {g.collapsed ? "+" : "−"}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const renderRowGroupGutterCell = (rowIdx: number) => {
+    if (!rowGroups || rowGroups.length === 0) return null;
+    // Find the bracket cells for this row at each level
+    return (
+      <div
+        className="flex-shrink-0 relative bg-grid-header border-b border-r border-grid"
+        style={{ width: rowGutterWidth, minHeight: getRowHeight(rowIdx) }}
+      >
+        {rowGroups.map((g, i) => {
+          if (rowIdx < g.start || rowIdx > g.end) return null;
+          const left = g.level * GUTTER_UNIT + 2;
+          const isLast = rowIdx === g.end;
+          return (
+            <div
+              key={i}
+              className="absolute top-0 bottom-0"
+              style={{ left, width: GUTTER_UNIT - 4 }}
+            >
+              {!g.collapsed && (
+                <div className="absolute left-1/2 top-0 bottom-0 w-px bg-muted-foreground/40" />
+              )}
+              {isLast && (
+                <button
+                  onClick={() => onToggleRowGroup?.(i)}
+                  className="absolute left-1/2 bottom-0 -translate-x-1/2 translate-y-1/2 w-3.5 h-3.5 bg-background border border-muted-foreground/60 text-[10px] leading-none flex items-center justify-center rounded-sm hover:bg-muted z-10"
+                  title={g.collapsed ? "Expand" : "Collapse"}
+                >
+                  {g.collapsed ? "+" : "−"}
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <div
       ref={gridRef}
@@ -278,11 +379,15 @@ export function SpreadsheetGrid({
       style={{ cursor: isResizing ? (resizingCol !== null ? "col-resize" : "row-resize") : "default" }}
     >
       <div className="inline-block min-w-full">
+        {/* Column-group gutter (above column headers) */}
+        {renderColGroupGutter()}
+
         {/* Column headers */}
         <div className="flex sticky top-0 z-10">
+          {/* Top-left corner: row gutter + row-number column */}
           <div className="flex-shrink-0 border-b border-r border-grid bg-grid-header sticky left-0 z-20"
-            style={{ width: 50, height: DEFAULT_ROW_HEIGHT }} />
-          {Array.from({ length: NUM_COLS }, (_, c) => (
+            style={{ width: rowGutterWidth + 50, height: DEFAULT_ROW_HEIGHT }} />
+          {visibleCols.map((c) => (
             <div
               key={c}
               className="flex-shrink-0 border-b border-r border-grid bg-grid-header flex items-center justify-center text-[11px] font-medium text-muted-foreground select-none transition-colors relative"
@@ -293,7 +398,6 @@ export function SpreadsheetGrid({
               }}
             >
               {colLabel(c)}
-              {/* Column resize handle */}
               <div
                 className="absolute top-0 right-0 w-[4px] h-full cursor-col-resize hover:bg-primary/30 z-30"
                 onMouseDown={(e) => handleColResizeStart(c, e)}
@@ -303,24 +407,27 @@ export function SpreadsheetGrid({
         </div>
 
         {/* Rows */}
-        {Array.from({ length: NUM_ROWS }, (_, r) => (
+        {visibleRows.map((r) => (
           <div key={r} className="flex items-stretch">
+            {/* Row-group gutter cell */}
+            {renderRowGroupGutterCell(r)}
+            {/* Row number */}
             <div
-              className="flex-shrink-0 border-b border-r border-grid bg-grid-header flex items-center justify-center text-[11px] font-medium text-muted-foreground select-none sticky left-0 z-10 transition-colors relative"
+              className="flex-shrink-0 border-b border-r border-grid bg-grid-header flex items-center justify-center text-[11px] font-medium text-muted-foreground select-none sticky z-10 transition-colors relative"
               style={{
                 width: 50,
+                left: rowGutterWidth,
                 minHeight: getRowHeight(r),
                 backgroundColor: selectedCell?.row === r ? "hsl(var(--toolbar-active))" : undefined
               }}
             >
               {r + 1}
-              {/* Row resize handle */}
               <div
                 className="absolute bottom-0 left-0 w-full h-[4px] cursor-row-resize hover:bg-primary/30 z-30"
                 onMouseDown={(e) => handleRowResizeStart(r, e)}
               />
             </div>
-            {Array.from({ length: NUM_COLS }, (_, c) => renderCell(r, c))}
+            {visibleCols.map((c) => renderCell(r, c))}
           </div>
         ))}
       </div>
