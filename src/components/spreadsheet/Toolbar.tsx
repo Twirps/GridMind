@@ -137,6 +137,48 @@ export function Toolbar({
           />
         </label>
       </div>
+
+      <Separator orientation="vertical" className="h-5 mx-1.5" />
+
+      {/* Group / Ungroup */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="toolbar" size="icon-sm" title="Group rows or columns">
+            <Group className="h-3.5 w-3.5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-44">
+          <DropdownMenuItem
+            disabled={!hasRangeSelection}
+            onClick={() => onGroupRows?.()}
+            className="text-xs"
+          >
+            Group rows
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            disabled={!hasRangeSelection}
+            onClick={() => onGroupCols?.()}
+            className="text-xs"
+          >
+            Group columns
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            disabled={!hasRangeSelection}
+            onClick={() => onUngroupRows?.()}
+            className="text-xs"
+          >
+            Ungroup rows
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            disabled={!hasRangeSelection}
+            onClick={() => onUngroupCols?.()}
+            className="text-xs"
+          >
+            Ungroup columns
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }
