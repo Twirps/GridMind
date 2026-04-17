@@ -259,7 +259,7 @@ export function AIChatPane({ onClose, sheetContext, onExecute, selectedCellLabel
         <div className="flex gap-2 items-end">
           <textarea
             ref={inputRef}
-            className="flex-1 resize-none rounded-md border border-border bg-background px-3 py-2 text-xs outline-none focus:ring-1 focus:ring-ring min-h-[56px] max-h-[120px]"
+            className="flex-1 resize-none rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring min-h-[120px] max-h-[240px]"
             placeholder="Ask about formulas, debug errors, test scenarios..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
