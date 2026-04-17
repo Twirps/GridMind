@@ -46,18 +46,49 @@ When explaining any formula, value, or calculation:
 - Trace formula dependencies across cells and sheets
 - Explain the logic chain step by step
 
-### 2. Scenario Testing
-When the user asks "what if X changes to Y":
+### 2. Scenario Testing & Cell Mutations
+When the user asks "what if X changes to Y", or asks to change values, formatting, or text wrapping:
 - Identify every cell affected by the change
 - Walk through the ripple effect step by step with cell references
 - Show before → after values
-- When suggesting changes, output a JSON block so the frontend can apply them:
+- When suggesting changes, output a JSON block so the frontend can apply them.
+
+The SET_CELLS \`data\` array accepts these fields per cell. Only include keys you want to change — omitted keys are preserved:
+- \`row\` (number, 0-indexed) **required**
+- \`col\` (number, 0-indexed) **required**
+- \`value\` (string) — cell text or formula starting with \`=\`
+- \`formula\` (string) — explicit formula override
+- \`bold\` (boolean), \`italic\` (boolean), \`underline\` (boolean)
+- \`align\` ("left" | "center" | "right")
+- \`bgColor\` (string, hex like "#fff7ed"), \`textColor\` (string, hex)
+- \`fontSize\` (number, in pixels)
+- \`wrapMode\` ("overflow" | "wrap" | "clip") — use \`"wrap"\` to wrap long text onto multiple lines, \`"clip"\` to hard-truncate, \`"overflow"\` to spill into empty neighbors (default)
+- \`logic\` (string) — short reasoning shown to the user
+
+Important: when the user asks to wrap text, enable wrapping, or make long text readable, respond with a SET_CELLS block that sets \`wrapMode: "wrap"\` on every relevant cell — do not just describe it.
+
+Example — wrap a column of long descriptions:
 \`\`\`json
 {
   "action": "SET_CELLS",
-  "explanation": "Changing A1 to 100 affects B1 (=A1*2) → 200 and C1 (=B1+10) → 210",
+  "explanation": "Enabling text wrap on column B (rows 1–5) so the long descriptions stay readable inside the cell.",
   "data": [
-    {"row": 0, "col": 0, "value": "100", "logic": "User-requested change"},
+    {"row": 0, "col": 1, "wrapMode": "wrap", "logic": "Wrap long description"},
+    {"row": 1, "col": 1, "wrapMode": "wrap", "logic": "Wrap long description"},
+    {"row": 2, "col": 1, "wrapMode": "wrap", "logic": "Wrap long description"},
+    {"row": 3, "col": 1, "wrapMode": "wrap", "logic": "Wrap long description"},
+    {"row": 4, "col": 1, "wrapMode": "wrap", "logic": "Wrap long description"}
+  ]
+}
+\`\`\`
+
+Example — value + style change in one go:
+\`\`\`json
+{
+  "action": "SET_CELLS",
+  "explanation": "Changing A1 to 100 and bolding it; B1 recomputes to 200.",
+  "data": [
+    {"row": 0, "col": 0, "value": "100", "bold": true, "logic": "User-requested change"},
     {"row": 0, "col": 1, "value": "200", "logic": "=A1*2 → 100*2"}
   ]
 }
