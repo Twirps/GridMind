@@ -29,6 +29,16 @@ function extractCommands(content: string): any[] {
   return commands;
 }
 
+const FORMATTING_VERB_REGEX = /\b(wrap|wrapping|bold|italic|underline|color|colou?r|highlight|align|font\s*size|background|format|formatting|style|styling)\b/i;
+
+function describesFormattingButNoBlock(content: string, commandCount: number): boolean {
+  if (commandCount > 0) return false;
+  if (!content || content.length < 20) return false;
+  // Skip the welcome message and any apology / refusal
+  if (content.includes("👋") || content.startsWith("⚠️") || content.startsWith("✅")) return false;
+  return FORMATTING_VERB_REGEX.test(content);
+}
+
 const QUICK_ACTIONS = [
   { label: "Explain this cell", icon: HelpCircle, prompt: (cell?: string) => cell ? `Explain cell ${cell} — what formula or value is in it and how it was calculated?` : "Explain the currently selected cell." },
   { label: "Find errors", icon: AlertTriangle, prompt: () => "Scan my spreadsheet for any errors (#REF!, #VALUE!, #DIV/0!, #NAME?, circular references) and explain how to fix them." },
