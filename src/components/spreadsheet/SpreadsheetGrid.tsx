@@ -385,29 +385,47 @@ export function SpreadsheetGrid({
 
   const renderRowGroupGutterCell = (rowIdx: number) => {
     if (!rowGroups || rowGroups.length === 0) return null;
-    // Find the bracket cells for this row at each level
     return (
       <div
         className="flex-shrink-0 relative bg-grid-header border-b border-r border-grid"
         style={{ width: rowGutterWidth, minHeight: getRowHeight(rowIdx) }}
       >
         {rowGroups.map((g, i) => {
-          if (rowIdx < g.start || rowIdx > g.end) return null;
           const left = g.level * GUTTER_UNIT + 2;
-          const isLast = rowIdx === g.end;
+          // When collapsed, anchor button to the row just before the group
+          // (since all rows inside are hidden). Fallback to row after.
+          const buttonAnchorRow = g.collapsed
+            ? (g.start > 0 ? g.start - 1 : g.end + 1)
+            : g.end;
+          const isButtonRow = rowIdx === buttonAnchorRow;
+          const insideBracket = !g.collapsed && rowIdx >= g.start && rowIdx <= g.end;
+
+          if (!insideBracket && !isButtonRow) return null;
+
           return (
             <div
               key={i}
               className="absolute top-0 bottom-0"
               style={{ left, width: GUTTER_UNIT - 4 }}
             >
-              {!g.collapsed && (
+              {insideBracket && (
                 <div className="absolute left-1/2 top-0 bottom-0 w-px bg-muted-foreground/40" />
               )}
-              {isLast && (
+              {isButtonRow && (
                 <button
                   onClick={() => onToggleRowGroup?.(i)}
-                  className="absolute left-1/2 bottom-0 -translate-x-1/2 translate-y-1/2 w-3.5 h-3.5 bg-background border border-muted-foreground/60 text-[10px] leading-none flex items-center justify-center rounded-sm hover:bg-muted z-10"
+                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-background border border-muted-foreground/60 text-[10px] leading-none flex items-center justify-center rounded-sm hover:bg-muted z-10"
+                  title={g.collapsed ? "Expand" : "Collapse"}
+                >
+                  {g.collapsed ? "+" : "−"}
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
                   title={g.collapsed ? "Expand" : "Collapse"}
                 >
                   {g.collapsed ? "+" : "−"}
