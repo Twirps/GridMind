@@ -214,7 +214,7 @@ export function AIChatPane({ onClose, sheetContext, onExecute, selectedCellLabel
                   </div>
                 )}
                 {msg.role === "assistant" && describesFormattingButNoBlock(msg.content, commands.length) && !isLoading && (
-                  <div className="flex items-start gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1.5 text-[10px] leading-snug text-amber-700 dark:text-amber-400">
+                  <div className="flex items-start gap-1.5 rounded-md border border-destructive/40 bg-destructive/10 px-2 py-1.5 text-[10px] leading-snug text-destructive">
                     <AlertTriangle className="h-3 w-3 flex-shrink-0 mt-0.5" />
                     <span>The AI described changes but didn't produce an Apply block. Try rephrasing — e.g. <em>"Wrap rows 1–10 of column B"</em>.</span>
                   </div>
