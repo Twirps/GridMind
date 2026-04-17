@@ -14,6 +14,12 @@ interface AIChatPaneProps {
   sheetContext?: string;
   onExecute?: (command: any) => void;
   selectedCellLabel?: string;
+  messages: Message[];
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
+  input: string;
+  setInput: React.Dispatch<React.SetStateAction<string>>;
+  width: number;
+  setWidth: React.Dispatch<React.SetStateAction<number>>;
 }
 
 function extractCommands(content: string): any[] {
