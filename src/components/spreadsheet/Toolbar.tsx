@@ -1,10 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { CellData, WrapMode } from "./types";
 import {
   Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight,
-  Undo, Redo, WrapText, MoveHorizontal, Scissors,
+  Undo, Redo, WrapText, MoveHorizontal, Scissors, Group,
 } from "lucide-react";
 
 interface ToolbarProps {
@@ -14,11 +17,19 @@ interface ToolbarProps {
   onRedo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  onGroupRows?: () => void;
+  onGroupCols?: () => void;
+  onUngroupRows?: () => void;
+  onUngroupCols?: () => void;
+  hasRangeSelection?: boolean;
 }
 
 const FONT_SIZES = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 72];
 
-export function Toolbar({ cellStyle, onStyleChange, onUndo, onRedo, canUndo, canRedo }: ToolbarProps) {
+export function Toolbar({
+  cellStyle, onStyleChange, onUndo, onRedo, canUndo, canRedo,
+  onGroupRows, onGroupCols, onUngroupRows, onUngroupCols, hasRangeSelection,
+}: ToolbarProps) {
   const toggle = (key: keyof CellData) => {
     onStyleChange({ [key]: !cellStyle[key] });
   };
