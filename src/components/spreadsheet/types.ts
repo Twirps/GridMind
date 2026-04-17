@@ -77,7 +77,7 @@ export interface CellData {
   bgColor?: string;
   textColor?: string;
   fontSize?: number;
-  wrap?: boolean;
+  wrapMode?: WrapMode;
   // --- NEW AI FIELDS ---
   metadata?: {
     aiGenerated?: boolean;
