@@ -29,7 +29,7 @@ function extractCommands(content: string): any[] {
   return commands;
 }
 
-const FORMATTING_VERB_REGEX = /\b(wrap|wrapping|bold|italic|underline|color|colou?r|highlight|align|font\s*size|background|format|formatting|style|styling)\b/i;
+const FORMATTING_VERB_REGEX = /\b(wrap|wrapping|bold|italic|underline|color|colou?r|highlight|align|font\s*size|background|format|formatting|style|styling|delete|deleting|clear|clearing|remove|removing|erase|erasing|wipe|wiping)\b/i;
 
 function describesFormattingButNoBlock(content: string, commandCount: number): boolean {
   if (commandCount > 0) return false;
