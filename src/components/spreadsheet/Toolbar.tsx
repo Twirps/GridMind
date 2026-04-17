@@ -52,7 +52,7 @@ export function Toolbar({ cellStyle, onStyleChange, onUndo, onRedo, canUndo, can
 
       <Separator orientation="vertical" className="h-5 mx-1.5" />
 
-      {/* Bold/Italic/Underline/Wrap */}
+      {/* Bold/Italic/Underline */}
       <div className="flex items-center gap-0.5">
         <Button variant={cellStyle.bold ? "toolbar-active" : "toolbar"} size="icon-sm" onClick={() => toggle("bold")} title="Bold (Ctrl+B)">
           <Bold className="h-3.5 w-3.5" />
@@ -63,9 +63,29 @@ export function Toolbar({ cellStyle, onStyleChange, onUndo, onRedo, canUndo, can
         <Button variant={cellStyle.underline ? "toolbar-active" : "toolbar"} size="icon-sm" onClick={() => toggle("underline")} title="Underline (Ctrl+U)">
           <Underline className="h-3.5 w-3.5" />
         </Button>
-        <Button variant={cellStyle.wrap ? "toolbar-active" : "toolbar"} size="icon-sm" onClick={() => toggle("wrap")} title="Wrap Text">
-          <WrapText className="h-3.5 w-3.5" />
-        </Button>
+      </div>
+
+      <Separator orientation="vertical" className="h-5 mx-1.5" />
+
+      {/* Wrap mode: Overflow / Wrap / Clip */}
+      <div className="flex items-center gap-0.5">
+        {(() => {
+          const current: WrapMode = cellStyle.wrapMode ?? "overflow";
+          const setMode = (m: WrapMode) => onStyleChange({ wrapMode: m });
+          return (
+            <>
+              <Button variant={current === "overflow" ? "toolbar-active" : "toolbar"} size="icon-sm" onClick={() => setMode("overflow")} title="Overflow (spill into empty cells)">
+                <MoveHorizontal className="h-3.5 w-3.5" />
+              </Button>
+              <Button variant={current === "wrap" ? "toolbar-active" : "toolbar"} size="icon-sm" onClick={() => setMode("wrap")} title="Wrap text">
+                <WrapText className="h-3.5 w-3.5" />
+              </Button>
+              <Button variant={current === "clip" ? "toolbar-active" : "toolbar"} size="icon-sm" onClick={() => setMode("clip")} title="Clip text">
+                <Scissors className="h-3.5 w-3.5" />
+              </Button>
+            </>
+          );
+        })()}
       </div>
 
       <Separator orientation="vertical" className="h-5 mx-1.5" />
