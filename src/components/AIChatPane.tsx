@@ -61,18 +61,43 @@ const WELCOME_MESSAGE = `👋 I'm **GridMind**, your spreadsheet expert. Here's 
 
 Use the quick actions below or just ask me anything about your spreadsheet!`;
 
-export function AIChatPane({ onClose, sheetContext, onExecute, selectedCellLabel }: AIChatPaneProps) {
-  const [messages, setMessages] = useState<Message[]>([
-    { role: "assistant", content: WELCOME_MESSAGE }
-  ]);
-  const [input, setInput] = useState("");
+export function AIChatPane({ onClose, sheetContext, onExecute, selectedCellLabel, messages, setMessages, input, setInput, width, setWidth }: AIChatPaneProps) {
   const [isLoading, setIsLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  // Seed welcome message on first mount if empty
+  useEffect(() => {
+    if (messages.length === 0) {
+      setMessages([{ role: "assistant", content: WELCOME_MESSAGE }]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  const handleResizeMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = width;
+    const onMove = (ev: MouseEvent) => {
+      const delta = startX - ev.clientX;
+      const next = Math.min(800, Math.max(320, startWidth + delta));
+      setWidth(next);
+    };
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  };
 
   const send = async (overrideText?: string) => {
     const text = (overrideText ?? input).trim();
