@@ -1,10 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CellData } from "./types";
+import { CellData, WrapMode } from "./types";
 import {
   Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight,
-  Undo, Redo, WrapText,
+  Undo, Redo, WrapText, MoveHorizontal, Scissors,
 } from "lucide-react";
 
 interface ToolbarProps {
