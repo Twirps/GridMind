@@ -475,12 +475,18 @@ export default function Index() {
         />
 
         {aiOpen && (
-          <div className="w-[380px] border-l border-border bg-card z-10">
+          <div style={{ width: aiPaneWidth }} className="border-l border-border bg-card z-10 flex-shrink-0">
             <AIChatPane
               onClose={() => setAiOpen(false)}
               sheetContext={getSheetContext()}
               onExecute={handleAIExecute}
               selectedCellLabel={selectedCellLabel}
+              messages={aiMessages}
+              setMessages={setAiMessages}
+              input={aiInput}
+              setInput={setAiInput}
+              width={aiPaneWidth}
+              setWidth={setAiPaneWidth}
             />
           </div>
         )}
