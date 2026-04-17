@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useEffect } from "react";
+import { useRef, useState, useCallback, useEffect, useLayoutEffect } from "react";
 import { Sparkles } from "lucide-react";
 import {
   SheetData, CellData, CellAddress, cellKey, colLabel,
@@ -47,6 +47,10 @@ export function SpreadsheetGrid({
   const [resizingRow, setResizingRow] = useState<number | null>(null);
   const resizeStart = useRef(0);
   const resizeOriginal = useRef(0);
+
+  // Peek overlay: detect when selected cell content is truncated
+  const selectedContentRef = useRef<HTMLSpanElement>(null);
+  const [peekTruncated, setPeekTruncated] = useState(false);
 
   const getColWidth = (c: number) => sheet.colWidths[c] ?? DEFAULT_COL_WIDTH;
   const getRowHeight = (r: number) => sheet.rowHeights[r] ?? DEFAULT_ROW_HEIGHT;
@@ -161,6 +165,28 @@ export function SpreadsheetGrid({
     };
   }, [resizingCol, resizingRow, onColResize, onRowResize]);
 
+  // Reset peek state on selection change / edit start
+  useEffect(() => {
+    setPeekTruncated(false);
+  }, [selectedCell?.row, selectedCell?.col, editingCell]);
+
+  // Detect if selected cell content overflows its visible box
+  useLayoutEffect(() => {
+    if (!selectedCell || editingCell) {
+      setPeekTruncated(false);
+      return;
+    }
+    const el = selectedContentRef.current;
+    if (!el) {
+      setPeekTruncated(false);
+      return;
+    }
+    const truncated =
+      el.scrollWidth > el.clientWidth + 1 ||
+      el.scrollHeight > el.clientHeight + 1;
+    setPeekTruncated(truncated);
+  });
+
   const renderCell = (row: number, col: number) => {
     const key = cellKey(row, col);
     const cell = sheet.cells[key] as any;
@@ -252,6 +278,7 @@ export function SpreadsheetGrid({
           />
         ) : canOverflow ? (
           <span
+            ref={isSelected ? selectedContentRef : undefined}
             className={contentClass + " absolute top-0 left-0 pointer-events-none"}
             style={{
               width: "max-content",
@@ -262,9 +289,32 @@ export function SpreadsheetGrid({
             {String(displayVal)}
           </span>
         ) : (
-          <span className={contentClass}>
+          <span
+            ref={isSelected ? selectedContentRef : undefined}
+            className={contentClass}
+          >
             {String(displayVal)}
           </span>
+        )}
+
+        {isSelected && !isEditing && peekTruncated && String(displayVal).length > 0 && (
+          <div
+            className="absolute top-0 left-0 pointer-events-none z-40 bg-background border border-border shadow-lg rounded-sm px-[3px] py-[1px]"
+            style={{
+              minWidth: w,
+              maxWidth: 400,
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+              fontWeight: cell?.bold ? "bold" : undefined,
+              fontStyle: cell?.italic ? "italic" : undefined,
+              textDecoration: cell?.underline ? "underline" : undefined,
+              textAlign: cell?.align ?? "left",
+              color: cell?.textColor ?? undefined,
+              fontSize: cell?.fontSize ? `${cell.fontSize}px` : undefined,
+            }}
+          >
+            {String(displayVal)}
+          </div>
         )}
       </div>
     );

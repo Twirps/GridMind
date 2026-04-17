@@ -214,7 +214,7 @@ export async function importFromFile(file: File): Promise<SheetData[]> {
                 if (font.bold) cellData.bold = true;
                 if (font.italic) cellData.italic = true;
                 if (font.underline) cellData.underline = true;
-                if (typeof font.size === "number") cellData.fontSize = font.size;
+                if (typeof font.size === "number") cellData.fontSize = Math.round(font.size * 1.333);
                 if (font.color) cellData.textColor = font.color;
               }
             }
