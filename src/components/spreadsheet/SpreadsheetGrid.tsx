@@ -426,17 +426,6 @@ export function SpreadsheetGrid({
       </div>
     );
   };
-                  title={g.collapsed ? "Expand" : "Collapse"}
-                >
-                  {g.collapsed ? "+" : "−"}
-                </button>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
 
   return (
     <div
