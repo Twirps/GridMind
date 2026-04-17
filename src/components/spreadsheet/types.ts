@@ -92,12 +92,21 @@ export interface CellData {
 
 export type CellAddress = { row: number; col: number };
 
+export interface OutlineGroup {
+  start: number;
+  end: number;
+  level: number;
+  collapsed: boolean;
+}
+
 export interface SheetData {
   id: string;
   name: string;
   cells: Record<string, CellData>;
   colWidths: Record<number, number>;
   rowHeights: Record<number, number>;
+  rowGroups?: OutlineGroup[];
+  colGroups?: OutlineGroup[];
 }
 
 export interface SpreadsheetState {
