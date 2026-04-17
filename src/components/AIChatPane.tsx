@@ -208,7 +208,7 @@ export function AIChatPane({ onClose, sheetContext, onExecute, selectedCellLabel
                         onClick={() => handleApply(cmd)}
                       >
                         <Play className="h-3 w-3" />
-                        Apply {cmd.action === "SET_CELLS" ? `${cmd.data?.length || 0} cell changes` : cmd.action}
+                        Apply {cmd.action === "SET_CELLS" ? `${cmd.data?.length || 0} cell changes` : cmd.action === "DELETE_CELLS" ? `${cmd.data?.length || 0} cell deletion${(cmd.data?.length || 0) === 1 ? "" : "s"}` : cmd.action}
                       </Button>
                     ))}
                   </div>
