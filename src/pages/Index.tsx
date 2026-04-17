@@ -185,6 +185,27 @@ export default function Index() {
             newCells[key] = next;
           });
           break;
+        case "DELETE_CELLS":
+          (command.data || []).forEach((item: any) => {
+            if (item.entireRow && typeof item.row === "number") {
+              const prefix = `${item.row},`;
+              Object.keys(newCells).forEach((k) => {
+                if (k.startsWith(prefix)) delete newCells[k];
+              });
+              return;
+            }
+            if (item.entireCol && typeof item.col === "number") {
+              const suffix = `,${item.col}`;
+              Object.keys(newCells).forEach((k) => {
+                if (k.endsWith(suffix)) delete newCells[k];
+              });
+              return;
+            }
+            if (typeof item.row === "number" && typeof item.col === "number") {
+              delete newCells[cellKey(item.row, item.col)];
+            }
+          });
+          break;
         case "DELETE_BOTTOM_PERCENT": {
           const columnValues = Object.entries(sheet.cells)
             .filter(([key]) => key.endsWith(`,${command.col}`))
