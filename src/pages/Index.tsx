@@ -150,6 +150,12 @@ export default function Index() {
             const hasStyle = styleKeys.some((k) => item[k] !== undefined) || wrapModeIncoming !== undefined;
             const hasValue = item.value !== undefined || item.formula !== undefined;
 
+            // Treat empty-string value with no styling as a deletion (legacy AI clear pattern)
+            if (item.value === "" && item.formula === undefined && !hasStyle) {
+              delete newCells[key];
+              return;
+            }
+
             // Empty-cell guard: skip blank cells that receive no value (avoids ghost cells)
             if (!prev && !hasValue && !hasStyle) return;
             if (!prev && !hasValue) {
