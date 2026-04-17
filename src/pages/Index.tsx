@@ -206,7 +206,7 @@ export default function Index() {
           });
           break;
       }
-      return { ...sheet, cells: newCells };
+      return { ...sheet, cells: newCells, rowHeights: rowHeightsChanged ? newRowHeights : sheet.rowHeights };
     });
   }, [updateActiveSheet, toast]);
 
