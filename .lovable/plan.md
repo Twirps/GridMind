@@ -1,33 +1,24 @@
 
 
-## Plan: Persist AI chat across open/close + make pane resizable
+## Plan: Remove AI reasoning highlight on cells
 
-### Problem
-- `AIChatPane` holds `messages` in local `useState`, so unmounting (closing the pane) wipes history.
-- Pane width is hardcoded `380px` inline — not resizable.
+### What to remove
+In `src/components/SpreadsheetGrid.tsx`, cells flagged with `metadata.aiGenerated` currently get:
+1. A blue tint background (`rgba(59, 130, 246, 0.05)`)
+2. A `border-blue-100` class
+3. A `Sparkles` icon overlay in the top-right corner with a hover tooltip showing AI reasoning
 
-### Investigation needed
-Confirm where `AIChatPane` is mounted/unmounted and how Index.tsx toggles it.
+### Changes
+**`src/components/spreadsheet/SpreadsheetGrid.tsx`**
+- Remove the `isAiGenerated` and `aiLogic` variables in `renderCell`.
+- Remove the `Sparkles` icon overlay block and its hover tooltip.
+- Remove the AI-generated background tint from the inline `style.backgroundColor` fallback chain.
+- Remove the `border-blue-100` conditional class.
+- Drop the now-unused `Sparkles` import from `lucide-react`.
 
-### Fixes
-
-**A. Lift chat state to `Index.tsx` (persists across open/close, cleared on route leave)**
-- Move `messages` and `input` state from `AIChatPane` into `Index.tsx` (which only mounts on `/editor`).
-- Pass them down as props: `messages`, `setMessages`, `input`, `setInput`.
-- When the user navigates away from `/editor`, `Index` unmounts and state naturally clears — matches requested behavior.
-- Keep all send/streaming logic inside `AIChatPane` but operate on the lifted state setters.
-
-**B. Make pane horizontally resizable**
-- Replace hardcoded `style={{ width: 380 }}` with controlled width state lifted to `Index.tsx` (so width also persists across toggles within the editor session).
-- Add a drag handle (`<div>` with `cursor-col-resize`) on the **left edge** of the pane.
-- On `mousedown`, attach `mousemove` listener that updates width = `window.innerWidth - e.clientX`, clamped between `320px` and `800px`. Release on `mouseup`.
-- Use a small custom hook inline (no new dependency) — `react-resizable-panels` is overkill since the pane is a fixed sibling, not part of a panel group.
-
-### Files changed
-- `src/pages/Index.tsx` — lift `aiMessages`, `aiInput`, `aiPaneWidth` state; pass down as props.
-- `src/components/AIChatPane.tsx` — accept new props instead of local state; add left-edge drag handle; use prop width.
+The underlying `metadata.aiGenerated` data on cells is left untouched (no migration), just no longer rendered.
 
 ### Out of scope
-- Persisting chat to localStorage/Supabase across full page reloads (current request only asks for open/close persistence within the editor session).
-- Vertical resize / detachable window.
+- Removing `metadata` writes from AI handlers in `Index.tsx` / edge function (data-only, invisible now).
+- Any change to the AI chat pane itself.
 
