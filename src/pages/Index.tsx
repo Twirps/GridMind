@@ -138,11 +138,21 @@ export default function Index() {
         case "SET_CELLS":
           command.data.forEach((item: any) => {
             const key = cellKey(item.row, item.col);
-            newCells[key] = {
-              ...newCells[key],
-              value: item.value,
-              metadata: { aiGenerated: true, logic: item.logic || "Pattern recognized by GridMind" }
-            };
+            const prev = newCells[key] ?? { value: "" };
+            const next: any = { ...prev };
+            // Value / formula — only overwrite if explicitly provided
+            if (item.value !== undefined) next.value = item.value;
+            if (item.formula !== undefined) next.formula = item.formula;
+            // Style passthrough — only set keys the AI actually included
+            const styleKeys = ["bold", "italic", "underline", "align", "bgColor", "textColor", "fontSize", "wrapMode"] as const;
+            for (const k of styleKeys) {
+              if (item[k] !== undefined) next[k] = item[k];
+            }
+            // Backwards-compat: accept `wrap: true|false` as shorthand
+            if (item.wrap === true) next.wrapMode = "wrap";
+            else if (item.wrap === false && next.wrapMode === "wrap") next.wrapMode = "overflow";
+            next.metadata = { aiGenerated: true, logic: item.logic || "Pattern recognized by GridMind" };
+            newCells[key] = next;
           });
           break;
         case "DELETE_BOTTOM_PERCENT": {
