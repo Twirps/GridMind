@@ -351,26 +351,42 @@ export function SpreadsheetGrid({
           </div>
           {/* Brackets per group */}
           {colGroups.map((g, i) => {
-            // Compute pixel left/right based on visible cols
-            let left = 0;
-            let width = 0;
+            // Compute pixel left/width for the bracket spanning visible cols.
+            // When collapsed, anchor the toggle button to the column just
+            // before the group (since all cols inside are hidden).
+            let bracketLeft = 0;
+            let bracketWidth = 0;
             for (const c of visibleCols) {
-              if (c < g.start) left += getColWidth(c);
-              else if (c >= g.start && c <= g.end) width += getColWidth(c);
+              if (c < g.start) bracketLeft += getColWidth(c);
+              else if (c >= g.start && c <= g.end) bracketWidth += getColWidth(c);
             }
             const top = g.level * GUTTER_UNIT + 2;
+
+            // Button position
+            let buttonLeft = bracketLeft + bracketWidth; // right edge of bracket (expanded)
+            if (g.collapsed) {
+              // Anchor at right edge of last visible col before g.start
+              let x = 0;
+              for (const c of visibleCols) {
+                if (c < g.start) x += getColWidth(c);
+                else break;
+              }
+              buttonLeft = x;
+            }
+
             return (
               <div
                 key={i}
                 className="absolute pointer-events-none"
-                style={{ left, top, width, height: GUTTER_UNIT - 4 }}
+                style={{ left: bracketLeft, top, width: bracketWidth, height: GUTTER_UNIT - 4 }}
               >
                 {!g.collapsed && (
                   <div className="absolute inset-x-0 top-1/2 h-px bg-muted-foreground/40" />
                 )}
                 <button
                   onClick={() => onToggleColGroup?.(i)}
-                  className="pointer-events-auto absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-3.5 h-3.5 bg-background border border-muted-foreground/60 text-[10px] leading-none flex items-center justify-center rounded-sm hover:bg-muted z-10"
+                  className="pointer-events-auto absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-background border border-muted-foreground/60 text-[10px] leading-none flex items-center justify-center rounded-sm hover:bg-muted z-10"
+                  style={{ left: buttonLeft - bracketLeft }}
                   title={g.collapsed ? "Expand" : "Collapse"}
                 >
                   {g.collapsed ? "+" : "−"}
