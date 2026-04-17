@@ -351,26 +351,42 @@ export function SpreadsheetGrid({
           </div>
           {/* Brackets per group */}
           {colGroups.map((g, i) => {
-            // Compute pixel left/right based on visible cols
-            let left = 0;
-            let width = 0;
+            // Compute pixel left/width for the bracket spanning visible cols.
+            // When collapsed, anchor the toggle button to the column just
+            // before the group (since all cols inside are hidden).
+            let bracketLeft = 0;
+            let bracketWidth = 0;
             for (const c of visibleCols) {
-              if (c < g.start) left += getColWidth(c);
-              else if (c >= g.start && c <= g.end) width += getColWidth(c);
+              if (c < g.start) bracketLeft += getColWidth(c);
+              else if (c >= g.start && c <= g.end) bracketWidth += getColWidth(c);
             }
             const top = g.level * GUTTER_UNIT + 2;
+
+            // Button position
+            let buttonLeft = bracketLeft + bracketWidth; // right edge of bracket (expanded)
+            if (g.collapsed) {
+              // Anchor at right edge of last visible col before g.start
+              let x = 0;
+              for (const c of visibleCols) {
+                if (c < g.start) x += getColWidth(c);
+                else break;
+              }
+              buttonLeft = x;
+            }
+
             return (
               <div
                 key={i}
                 className="absolute pointer-events-none"
-                style={{ left, top, width, height: GUTTER_UNIT - 4 }}
+                style={{ left: bracketLeft, top, width: bracketWidth, height: GUTTER_UNIT - 4 }}
               >
                 {!g.collapsed && (
                   <div className="absolute inset-x-0 top-1/2 h-px bg-muted-foreground/40" />
                 )}
                 <button
                   onClick={() => onToggleColGroup?.(i)}
-                  className="pointer-events-auto absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-3.5 h-3.5 bg-background border border-muted-foreground/60 text-[10px] leading-none flex items-center justify-center rounded-sm hover:bg-muted z-10"
+                  className="pointer-events-auto absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-background border border-muted-foreground/60 text-[10px] leading-none flex items-center justify-center rounded-sm hover:bg-muted z-10"
+                  style={{ left: buttonLeft - bracketLeft }}
                   title={g.collapsed ? "Expand" : "Collapse"}
                 >
                   {g.collapsed ? "+" : "−"}
@@ -385,29 +401,36 @@ export function SpreadsheetGrid({
 
   const renderRowGroupGutterCell = (rowIdx: number) => {
     if (!rowGroups || rowGroups.length === 0) return null;
-    // Find the bracket cells for this row at each level
     return (
       <div
         className="flex-shrink-0 relative bg-grid-header border-b border-r border-grid"
         style={{ width: rowGutterWidth, minHeight: getRowHeight(rowIdx) }}
       >
         {rowGroups.map((g, i) => {
-          if (rowIdx < g.start || rowIdx > g.end) return null;
           const left = g.level * GUTTER_UNIT + 2;
-          const isLast = rowIdx === g.end;
+          // When collapsed, anchor button to the row just before the group
+          // (since all rows inside are hidden). Fallback to row after.
+          const buttonAnchorRow = g.collapsed
+            ? (g.start > 0 ? g.start - 1 : g.end + 1)
+            : g.end;
+          const isButtonRow = rowIdx === buttonAnchorRow;
+          const insideBracket = !g.collapsed && rowIdx >= g.start && rowIdx <= g.end;
+
+          if (!insideBracket && !isButtonRow) return null;
+
           return (
             <div
               key={i}
               className="absolute top-0 bottom-0"
               style={{ left, width: GUTTER_UNIT - 4 }}
             >
-              {!g.collapsed && (
+              {insideBracket && (
                 <div className="absolute left-1/2 top-0 bottom-0 w-px bg-muted-foreground/40" />
               )}
-              {isLast && (
+              {isButtonRow && (
                 <button
                   onClick={() => onToggleRowGroup?.(i)}
-                  className="absolute left-1/2 bottom-0 -translate-x-1/2 translate-y-1/2 w-3.5 h-3.5 bg-background border border-muted-foreground/60 text-[10px] leading-none flex items-center justify-center rounded-sm hover:bg-muted z-10"
+                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-background border border-muted-foreground/60 text-[10px] leading-none flex items-center justify-center rounded-sm hover:bg-muted z-10"
                   title={g.collapsed ? "Expand" : "Collapse"}
                 >
                   {g.collapsed ? "+" : "−"}
